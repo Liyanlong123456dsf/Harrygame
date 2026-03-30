@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>失色纪·修钟人</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.loli.net">
+    <link href="https://fonts.loli.net/css2?family=UnifrakturMaguntia&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English+SC:ital@0;1&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 全屏点击进入提示（序言播放前） -->
+        <div id="enter-overlay">
+            <div class="enter-hint">点击任意处进入</div>
+        </div>
+
+        <!-- 引言叙事遮罩 -->
+        <div id="narration-overlay" class="narration-overlay hidden">
+            <div class="narration-deco narration-deco-tl"></div>
+            <div class="narration-deco narration-deco-br"></div>
+            <div id="narration-ink"></div>
+            <div id="narration-text" class="narration-text"></div>
+            <div id="narration-prompt" class="narration-prompt hidden">— 按任意键继续 —</div>
+            <button id="narration-skip" class="narration-skip">跳过</button>
+        </div>
+
+        <!-- 开始界面 -->
+        <div id="start-screen" class="screen hidden">
+            <!-- 点状褪色文字背景 -->
+            <canvas id="start-text-bg" aria-hidden="true"></canvas>
+            <!-- 褪色钟楼背景 -->
+            <canvas id="clock-tower-bg" aria-hidden="true"></canvas>
+            <!-- 褪色视觉特效层 -->
+            <div class="start-fade-effects" aria-hidden="true">
+                <div class="fade-blob fb1"></div>
+                <div class="fade-blob fb2"></div>
+                <div class="fade-blob fb3"></div>
+                <div class="fade-blob fb4"></div>
+                <div class="fade-blob fb5"></div>
+            </div>
+            <div class="title-container">
+                <!-- 线稿人物：孩子跪抱褪色的妈妈 -->
+                <div id="lore-figure" class="lore-figure" title="点击查看世界观">
+                    <svg viewBox="0 0 160 100" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- 妈妈躺卧（右侧，褪色） -->
+                        <g class="mother-group" opacity="0.45">
+                            <!-- 头发散开 -->
+                            <path d="M100,58 Q108,52 118,54 Q124,55 126,60" />
+                            <path d="M102,56 Q112,48 120,50" />
+                            <!-- 头部 -->
+                            <ellipse cx="96" cy="60" rx="8" ry="7" />
+                            <!-- 闭眼 -->
+                            <path d="M92,59 Q94,57 96,59" />
+                            <!-- 身体躺卧 -->
+                            <path d="M88,64 Q80,62 72,66 Q62,70 54,68" />
+                            <!-- 手臂垂落 -->
+                            <path d="M78,64 Q76,72 72,76" />
+                            <!-- 腿 -->
+                            <path d="M54,68 Q48,70 42,68" />
+                            <path d="M56,70 Q50,74 44,72" />
+                            <!-- 裙摆 -->
+                            <path d="M62,70 Q58,76 52,78" />
+                        </g>
+                        <!-- 孩子跪抱（左侧） -->
+                        <g class="child-group" opacity="0.7">
+                            <!-- 头部 -->
+                            <circle cx="80" cy="48" r="6" />
+                            <!-- 短发 -->
+                            <path d="M74,46 Q76,40 80,39 Q84,40 86,46" />
+                            <!-- 身体前倾 -->
+                            <path d="M80,54 Q82,60 84,64" />
+                            <!-- 伸出的手臂抱住妈妈 -->
+                            <path d="M80,56 Q86,58 90,60" />
+                            <path d="M80,58 Q84,62 88,64" />
+                            <!-- 跪着的腿 -->
+                            <path d="M84,64 Q82,72 78,76" />
+                            <path d="M84,64 Q88,72 86,76" />
+                            <!-- 泪滴 -->
+                            <circle cx="78" cy="52" r="0.8" fill="currentColor" stroke="none" />
+                            <circle cx="77" cy="55" r="0.6" fill="currentColor" stroke="none" opacity="0.5" />
+                        </g>
+                    </svg>
+                </div>
+                <h1 class="game-title">失色纪</h1>
+                <h2 class="game-subtitle">修钟人</h2>
+                <p class="tagline">当颜色被吞噬，用最后一滴颜料，绘出归途</p>
+            </div>
+
+            <button id="start-btn" class="parchment-btn">开始旅程</button>
+            <button id="guide-btn" class="parchment-btn guide-toggle">玩法说明</button>
+            <div class="credits">手绘水彩 × 暗黑童话</div>
+
+            <!-- 玩法说明 -->
+            <div id="guide-panel" class="guide-panel hidden">
+                <div class="guide-scroll">
+                    <h2 class="guide-heading">— 修钟人手记 —</h2>
+
+                    <section class="guide-section">
+                        <h3>◈ 故事背景</h3>
+                        <p>你是<b>林渡</b>，一名修钟匠学徒，意外跌入「褪色界」——一个正被<b>无色王</b>侵蚀、色彩逐渐消亡的水彩世界。你必须在<b>三日之内</b>找到散落的古钟碎片并修复古钟，打开归途。</p>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 操作方式</h3>
+                        <table class="guide-table">
+                            <tr><td>W A S D</td><td>移动</td></tr>
+                            <tr><td>Shift + 移动</td><td>奔跑（消耗色值）</td></tr>
+                            <tr><td>E</td><td>采集资源 / 交互 / 修复古钟</td></tr>
+                            <tr><td>空格 / 鼠标左键</td><td>攻击（范围50px）</td></tr>
+                            <tr><td>I</td><td>打开背包（点击装备或使用物品）</td></tr>
+                            <tr><td>C</td><td>打开调色盘（合成）</td></tr>
+                            <tr><td>F</td><td>放置纸灯</td></tr>
+                            <tr><td>1</td><td>使用赤色颜料（消耗20，对纸络蛛造成燃烧眩晕3秒）</td></tr>
+                            <tr><td>2</td><td>使用金色颜料（消耗20，撒散金色粒子）</td></tr>
+                            <tr><td>3</td><td>使用蓝色颜料（消耗20，撒散蓝色粒子）</td></tr>
+                            <tr><td>ESC</td><td>关闭面板</td></tr>
+                        </table>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 三项核心数值</h3>
+                        <div class="guide-stat">
+                            <span class="stat-dot" style="background:#C2452D"></span>
+                            <b>色值</b> — 生命力（最大100）。每秒-0.5持续消耗，奔跑额外消耗。采集<b>彩实</b>或<b>星尘草</b>可回复。归零即死亡。
+                        </div>
+                        <div class="guide-stat">
+                            <span class="stat-dot" style="background:#4A7FBF"></span>
+                            <b>墨韵值</b> — 意志力（最大100）。夜间无纸灯时每秒-2，过低时屏幕边缘出现水渍扭曲。<b>鸣蛹</b>歌声或<b>暖阳颜料（+35）</b>可回复。
+                        </div>
+                        <div class="guide-stat">
+                            <span class="stat-dot" style="background:#C4A35A"></span>
+                            <b>纸温值</b> — 温暖程度（最大100）。夜间无纸灯时每秒-1.5，归零后色值加速流失（额外-5/秒）。<b>纸灯</b>或<b>晨露珠采集（+20）</b>可回复。
+                        </div>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 昼夜循环</h3>
+                        <p>游戏共<b>三日</b>，每日分为三段，右上角时间面板的<b>进度条</b>实时显示当前时段位置：</p>
+                        <div class="guide-stat"><b>白昼</b>（6:00–13:59）— 安全期，适合探索与采集。怪物每30秒刷新1只。</div>
+                        <div class="guide-stat"><b>黄昏</b>（14:00–17:59）— 过渡期，敌对生物开始活跃。怪物每20秒刷新1只。</div>
+                        <div class="guide-stat"><b>黑夜</b>（18:00–5:59）— 危险期，黑暗笼罩，无色王侵蚀加剧。怪物每15秒刷新2只！务必提前准备纸灯！</div>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 资源一览</h3>
+                        <table class="guide-table recipe-table">
+                            <tr><th>资源</th><th>采集地点</th><th>采集效果</th></tr>
+                            <tr><td><span style="color:#708238">█</span> 星尘草</td><td>草地，分布广泛</td><td>色值 +15</td></tr>
+                            <tr><td><span style="color:#6B9FFF">█</span> 晨露珠</td><td>石地区域</td><td>纸温 +20</td></tr>
+                            <tr><td><span style="color:#2A2A3A">█</span> 炭骨枝</td><td>枯死树木</td><td>无直接效果，合成方用</td></tr>
+                            <tr><td><span style="color:#C2452D">█</span> 赤彩实</td><td>彩色树枝</td><td>色值 +20，提供赤色颜料</td></tr>
+                            <tr><td><span style="color:#C4A35A">█</span> 金彩实</td><td>彩色树枝</td><td>色值 +15，提供金色颜料</td></tr>
+                            <tr><td><span style="color:#4A7FBF">█</span> 蓝彩实</td><td>彩色树枝</td><td>色值 +10，提供蓝色颜料</td></tr>
+                            <tr><td><span style="color:#808080">█</span> 灰絮</td><td>灰雾地带边缘</td><td>纸温 −5（慢慢采！）</td></tr>
+                        </table>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 合成配方</h3>
+                        <table class="guide-table recipe-table">
+                            <tr><th>产物</th><th>材料</th><th>效果</th></tr>
+                            <tr><td>安心茶</td><td>晨露×2 + 星尘草×1</td><td>墨韵+25，消除恐惧</td></tr>
+                            <tr><td>暖阳颜料</td><td>星尘草×2 + 晨露×1 + 金彩实×1</td><td>墨韵+35，提升周围饱和度</td></tr>
+                            <tr><td>纸灯</td><td>炭骨枝×3 + 星尘草×1 + 灰絮×2</td><td>夜间照明（半径150px），范围内纸温+5/秒</td></tr>
+                            <tr><td>炭笔</td><td>炭骨枝×5</td><td>武器，攻击力+15</td></tr>
+                            <tr><td>澄墨水</td><td>炭骨枝×2 + 晨露×2</td><td>墨韵+10，润滑剂原料</td></tr>
+                            <tr><td>七彩液</td><td>赤彩实×1 + 金彩实×1 + 蓝彩实×1</td><td>润滑剂原料</td></tr>
+                            <tr><td>古钟润滑剂 ★</td><td>七彩液×1 + 澄墨水×1 + 星尘草×3</td><td>修复古钟的关键道具</td></tr>
+                            <tr><td>灰幕弹</td><td>灰絮×5 + 炭骨枝×1</td><td>投掷型，范围内敌人迷失方3秒</td></tr>
+                        </table>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 生物图鉴</h3>
+                        <div class="guide-creature">
+                            <span class="stat-dot" style="background:#FFD700"></span>
+                            <b>鸣蛹</b>（友好）— 发光的茧状生物，定期吟唱，附近玩家<b>回复墨韵值</b>。按 E 轻触可额外获得墨韵。
+                        </div>
+                        <div class="guide-creature">
+                            <span class="stat-dot" style="background:#3A3A4E"></span>
+                            <b>灰烬鸦</b>（敌对）— 会飞扑啄取你的<b>色值</b>。血量第1日<b>34</b>→第2日<b>44</b>→第3日<b>57</b>。击败后掉落<b>炭骨枝×1-2、灰絮×2-3</b>。白昼上限4只，夜晚最多6只。
+                        </div>
+                        <div class="guide-creature">
+                            <span class="stat-dot" style="background:#D4C4A0"></span>
+                            <b>纸络蛛</b>（敌对）— 吐丝减速玩家，近身降低<b>纸温值</b>。血量第1日<b>45</b>→第2日<b>58</b>→第3日<b>76</b>。<b>赤色颜料（按1）</b>可使其燃烧眩晕3秒。击败后掉落灰絮×1-2。守卫钟塔附近，夜晚最多5只。
+                        </div>
+                        <p style="font-size:12px;opacity:0.7;margin-top:8px">⚠ 怪物会持续从你周围刷新，击杀不会清空战场。每过新的一天，怪物血量在前一天基础上提升<b>30%</b>，越战越强！</p>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 装备系统</h3>
+                        <div class="guide-stat">屏幕<b>左下角</b>为装备栏，显示当前装备及效果。</div>
+                        <div class="guide-stat">在<b>背包（I）</b>中点击<b>炭笔</b>即可装备，攻击力从10提升至<b>25</b>。</div>
+                        <div class="guide-stat">点击装备栏中的武器槽可<b>卸下</b>装备。</div>
+                        <table class="guide-table" style="margin-top:8px">
+                            <tr><th>武器</th><th>合成材料</th><th>效果</th></tr>
+                            <tr><td>炭笔</td><td>炭骨枝×5</td><td>攻击力 +15（总计25）</td></tr>
+                        </table>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 通关目标</h3>
+                        <ol class="guide-steps">
+                            <li>探索世界，找到散落的 <b>3 个古钟碎片</b>（靠近时会出现金色齿轮光晕）。</li>
+                            <li>采集资源，合成 <b>3 瓶古钟润滑剂</b>（七彩液 + 澄墨水 + 星尘草×3）。</li>
+                            <li>前往地图右上方的<b>古钟塔</b>，按 E 逐一修复碎片。</li>
+                            <li>三枚碎片全部修复后，古钟转动，归途开启！</li>
+                        </ol>
+                        <p class="guide-warn">⚠ 三日之内未能修复古钟，褪色界将彻底坍塌。</p>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 生存提示</h3>
+                        <ul class="guide-tips">
+                            <li>开始时背包自带<b>星尘草×3、晨露珠×2</b>，可先合成安心茶应急。</li>
+                            <li>白天优先采集资源，入夜前合成至少一盏<b>纸灯</b>，放在身边防止色值流失。</li>
+                            <li>古钟碎片靠近后会出现金色光晶，地图三个角落各有一片。</li>
+                            <li>遇到灰烬鸦可攻击击退；纸络蛛用<b>赤色颜料（按1）</b>可使其燃烧眩晕3秒。</li>
+                            <li>灰絮攒5个可合成<b>灰幕弹</b>，对多敌情况十分有效。</li>
+                            <li>鸣蛹附近是安全的休息点，歌声持续回复墨韵。</li>
+                            <li>彩实回复色值并补充对应颜料，赤彩实效果最大（+20）。</li>
+                            <li>右上角时间进度条悬停可展开完整面板，左下角任务进度悬停可查看详情。</li>
+                            <li>优先合成<b>炭笔</b>并装备，攻击力从10提升到<b>25</b>，大幅提升战斗效率。</li>
+                            <li>怪物会<b>不断刷新</b>，无需清场，专注资源采集和通关目标更高效。</li>
+                        </ul>
+                    </section>
+
+                    <button id="guide-close-btn" class="parchment-btn">我已了解，准备出发</button>
+                </div>
+            </div>
+
+            <!-- 世界观浮层（全屏覆盖，直接子元素确保 inset:0 相对 #start-screen） -->
+            <div id="lore-overlay" class="lore-overlay hidden">
+                <div class="lore-content">
+                    <p id="lore-text" class="lore-text"></p>
+                    <span class="lore-close">— 点击关闭 —</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 进入世界互动动画层 -->
+        <canvas id="intro-canvas" class="hidden"></canvas>
+
+        <!-- 游戏主画布 -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- UI层 -->
+        <div id="ui-layer" class="hidden">
+            <!-- 数值栏 -->
+            <div id="stats-panel">
+                <div class="stat-item" id="color-stat">
+                    <div class="stat-icon color-icon"></div>
+                    <div class="stat-bar">
+                        <div class="stat-fill" id="color-fill"></div>
+                    </div>
+                    <span class="stat-label">色值</span>
+                </div>
+                <div class="stat-item" id="ink-stat">
+                    <div class="stat-icon ink-icon"></div>
+                    <div class="stat-bar">
+                        <div class="stat-fill" id="ink-fill"></div>
+                    </div>
+                    <span class="stat-label">墨韵</span>
+                </div>
+                <div class="stat-item" id="warmth-stat">
+                    <div class="stat-icon warmth-icon"></div>
+                    <div class="stat-bar">
+                        <div class="stat-fill" id="warmth-fill"></div>
+                    </div>
+                    <span class="stat-label">纸温</span>
+                </div>
+            </div>
+
+            <!-- 合并面板：时间进度 + 任务进度 -->
+            <div id="quest-tracker">
+                <!-- 折叠态：时间条 + 任务条 两行 -->
+                <div id="tracker-mini">
+                    <div class="tracker-mini-row">
+                        <span class="tracker-mini-label">时间</span>
+                        <div id="period-bar-mini">
+                            <div id="period-bar-mini-fill"></div>
+                            <div id="period-bar-mini-cursor"></div>
+                        </div>
+                        <span id="tracker-mini-time">白昼</span>
+                    </div>
+                    <div class="tracker-mini-row">
+                        <span class="tracker-mini-label">任务</span>
+                        <div id="quest-mini-bar">
+                            <div id="quest-mini-fill"></div>
+                        </div>
+                        <span id="quest-mini-pct">0%</span>
+                    </div>
+                </div>
+                <!-- 展开态：悬停后滑出 -->
+                <div id="quest-expand">
+                    <!-- 时间区块 -->
+                    <div id="time-expand-section">
+                        <div id="time-expand-header">
+                            <span id="day-display">第一日</span>
+                            <span id="time-display">白昼</span>
+                            <div id="clock-icon"></div>
+                        </div>
+                        <div id="period-bar-wrap">
+                            <div id="period-bar-track">
+                                <div id="period-bar-fill"></div>
+                                <div id="period-bar-cursor"></div>
+                            </div>
+                            <div id="period-bar-labels">
+                                <span class="pbl day">昼</span>
+                                <span class="pbl dusk">昏</span>
+                                <span class="pbl night">夜</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 分割线 -->
+                    <div id="tracker-divider"></div>
+                    <!-- 任务区块 -->
+                    <div id="quest-header">
+                        <span id="quest-chapter">序章</span>
+                    </div>
+                    <div id="quest-progress-bar">
+                        <div id="quest-progress-fill"></div>
+                        <span id="quest-progress-text">0%</span>
+                    </div>
+                    <div id="quest-body">
+                        <div id="quest-title">修钟人的旅途</div>
+                        <div id="quest-objective"></div>
+                        <div id="quest-hint"></div>
+                        <div id="quest-steps">
+                            <div class="quest-step" data-step="0"><span class="step-check">○</span>探索褪色界</div>
+                            <div class="quest-step" data-step="1"><span class="step-check">○</span>采集基础资源</div>
+                            <div class="quest-step" data-step="2"><span class="step-check">○</span>制作生存道具</div>
+                            <div class="quest-step" data-step="3"><span class="step-check">○</span>寻找古钟碎片 <span class="step-count">(0/3)</span></div>
+                            <div class="quest-step" data-step="4"><span class="step-check">○</span>合成古钟润滑剂 <span class="step-count">(0/3)</span></div>
+                            <div class="quest-step" data-step="5"><span class="step-check">○</span>修复古钟 <span class="step-count">(0/3)</span></div>
+                        </div>
+                    </div>
+                    <div id="quest-arrow" class="hidden">
+                        <div id="quest-arrow-icon">➤</div>
+                        <div id="quest-arrow-label"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 颜料槽 -->
+            <div id="pigment-panel">
+                <div class="pigment-slot" id="pigment-red" data-color="red">
+                    <div class="pigment-fill"></div>
+                </div>
+                <div class="pigment-slot" id="pigment-yellow" data-color="yellow">
+                    <div class="pigment-fill"></div>
+                </div>
+                <div class="pigment-slot" id="pigment-blue" data-color="blue">
+                    <div class="pigment-fill"></div>
+                </div>
+            </div>
+
+            <!-- 装备栏 -->
+            <div id="equip-panel">
+                <div class="equip-label">装备</div>
+                <div id="equip-weapon-slot" class="equip-slot" title="武器槽（点击卸下）">
+                    <div id="equip-weapon-icon" class="equip-icon"></div>
+                    <div id="equip-weapon-name" class="equip-name">—</div>
+                </div>
+                <div id="equip-effect" class="equip-effect"></div>
+            </div>
+
+            <!-- 背包按钮 -->
+            <button id="inventory-btn" class="ui-btn">背包</button>
+            <button id="craft-btn" class="ui-btn">调色</button>
+
+            <!-- 提示信息 -->
+            <div id="tooltip" class="hidden"></div>
+        </div>
+
+        <!-- 背包界面 -->
+        <div id="inventory-screen" class="screen hidden">
+            <div class="parchment-panel">
+                <h2>背包</h2>
+                <div id="inventory-grid"></div>
+                <button class="close-btn">×</button>
+            </div>
+        </div>
+
+        <!-- 合成界面 -->
+        <div id="craft-screen" class="screen hidden">
+            <div class="parchment-panel craft-panel">
+                <h2>调色盘</h2>
+                <div id="craft-body">
+                    <!-- 左侧：背包材料 -->
+                    <div id="craft-inventory">
+                        <h3>材料</h3>
+                        <div id="craft-inv-grid"></div>
+                    </div>
+                    <!-- 右侧：调色区 -->
+                    <div id="palette-container">
+                        <div id="craft-slots">
+                            <div class="craft-slot" data-slot="0"></div>
+                            <div class="craft-slot" data-slot="1"></div>
+                            <div class="craft-slot" data-slot="2"></div>
+                            <div class="craft-slot" data-slot="3"></div>
+                        </div>
+                        <div id="craft-preview"></div>
+                        <div id="craft-center">
+                            <button id="craft-execute" disabled>调制</button>
+                        </div>
+                        <div id="craft-result"></div>
+                    </div>
+                </div>
+                <div id="recipes-list"></div>
+                <button class="close-btn">×</button>
+            </div>
+        </div>
+
+        <!-- 对话框 -->
+        <div id="dialog-box" class="hidden">
+            <div class="dialog-content">
+                <p id="dialog-text"></p>
+            </div>
+        </div>
+
+        <!-- 游戏结束界面 -->
+        <div id="end-screen" class="screen hidden">
+            <div class="end-content">
+                <h1 id="end-title"></h1>
+                <p id="end-message"></p>
+                <button id="restart-btn" class="parchment-btn">重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 竖屏提示（横屏游戏，竖屏时显示） -->
+    <div id="portrait-overlay" aria-hidden="true">
+        <div class="portrait-phone"></div>
+        <p>请将设备横置<br>以获得最佳游戏体验</p>
+    </div>
+
+    <!-- 手机虚拟操作杆 -->
+    <div id="mobile-controls" class="hidden">
+        <div id="joystick-zone">
+            <div id="joystick-base">
+                <div id="joystick-thumb"></div>
+            </div>
+            <button id="mb-sprint" class="mobile-action-btn mobile-btn-sm">冲</button>
+        </div>
+        <div id="mobile-action-btns">
+            <div class="mobile-btn-row">
+                <button class="mobile-action-btn mobile-btn-sm" id="mb-lantern">灯</button>
+                <button class="mobile-action-btn mobile-btn-sm" id="mb-inventory">包</button>
+                <button class="mobile-action-btn mobile-btn-sm" id="mb-craft">调</button>
+            </div>
+            <div class="mobile-btn-row">
+                <button class="mobile-action-btn" id="mb-interact">交互</button>
+                <button class="mobile-action-btn" id="mb-attack">攻击</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐蔽外挂入口（左下角极小透明区域，需点击5次） -->
+    <div id="cheat-trigger" aria-hidden="true"></div>
+
+    <!-- 密码弹窗 -->
+    <div id="cheat-pwd-overlay" class="hidden">
+        <div id="cheat-pwd-box">
+            <div id="cheat-pwd-title">⚙</div>
+            <input id="cheat-pwd-input" type="password" maxlength="10" autocomplete="off" placeholder="••••••" />
+            <div id="cheat-pwd-err"></div>
+            <div id="cheat-pwd-btns">
+                <button id="cheat-pwd-confirm">确认</button>
+                <button id="cheat-pwd-cancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 外挂控制面板 -->
+    <div id="cheat-panel" class="hidden">
+        <div id="cheat-panel-title">
+            <span>⚙ 调试面板</span>
+            <button id="cheat-panel-close">×</button>
+        </div>
+        <div class="cheat-row">
+            <span class="cheat-label">无敌模式</span>
+            <label class="cheat-toggle">
+                <input type="checkbox" id="cheat-invincible">
+                <span class="cheat-slider"></span>
+            </label>
+        </div>
+        <div class="cheat-row">
+            <span class="cheat-label">无限物品</span>
+            <label class="cheat-toggle">
+                <input type="checkbox" id="cheat-infinite-items">
+                <span class="cheat-slider"></span>
+            </label>
+        </div>
+        <div class="cheat-row">
+            <span class="cheat-label">时间倍速</span>
+            <div id="cheat-speed-btns">
+                <button class="cheat-speed-btn active" data-mult="1">×1</button>
+                <button class="cheat-speed-btn" data-mult="2">×2</button>
+                <button class="cheat-speed-btn" data-mult="5">×5</button>
+                <button class="cheat-speed-btn" data-mult="10">×10</button>
+            </div>
+        </div>
+        <div class="cheat-row">
+            <span class="cheat-label">色值满</span>
+            <button class="cheat-action-btn" id="cheat-fill-color">恢复</button>
+        </div>
+        <div class="cheat-row">
+            <span class="cheat-label">墨韵满</span>
+            <button class="cheat-action-btn" id="cheat-fill-ink">恢复</button>
+        </div>
+    </div>
+
+    <script src="js/intro-animation.js"></script>
+    <script src="js/narration.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/resources.js"></script>
+    <script src="js/creatures.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/quest.js"></script>
+    <script src="js/ending-sequence.js"></script>
+    <script src="js/death-ending-sequence.js"></script>
+    <script src="js/mobile-controls.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
