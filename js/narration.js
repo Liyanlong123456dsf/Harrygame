@@ -43,6 +43,8 @@ class CollageOpening {
         this._scrollY            = 0;
         this._scrollEl           = null;
         this._wheelHandler       = null;
+        this._smoothRaf          = null;
+        this._isMobileL          = false;
         // 继续信号
         this._waitingForContinue = false;
         this._fadeOutResolver    = null;
@@ -168,31 +170,18 @@ class CollageOpening {
     _startScroll() {
         this._scrollActive = true;
         const H = this.overlay.clientHeight;
-        this._isMobileL = typeof window !== 'undefined' && window.matchMedia
-            && window.matchMedia('(hover: none) and (orientation: landscape)').matches;
-        // 手机起始位置稍高，保证第4段在打字时已滚入屏幕
+        // 手机横屏：首行出现在屏幕45%处，不启动匀速滚动，改由段落触发式平滑滚动
         this._scrollY = H * (this._isMobileL ? 0.45 : 0.52);
         this._scrollEl.style.top = this._scrollY + 'px';
 
-        // 手机横屏降低滚动速度，让打字动画更清晰可见
-        const SPEED = this._isMobileL ? 35 : 57; // px/s
-        // 手机上：当最后一字到达60%高度时提前停止
-        const earlyStopTarget = this._isMobileL ? H * 0.60 : -Infinity;
+        if (this._isMobileL) return; // 手机上不用匀速滚动
+
+        const SPEED = 57; // px/s
         let lastTs = performance.now();
         const tick = (now) => {
             if (!this._scrollActive) return;
             const dt = (now - lastTs) / 1000;
             lastTs = now;
-            // 检查最后一字是否已到达停止目标
-            if (this._isMobileL && this._chars && this._chars.length > 0) {
-                const overlayTop = this.overlay.getBoundingClientRect().top;
-                const lastBottom = this._chars[this._chars.length - 1]
-                    .getBoundingClientRect().bottom - overlayTop;
-                if (lastBottom <= earlyStopTarget) {
-                    this._scrollActive = false;
-                    return;
-                }
-            }
             this._scrollY -= SPEED * dt;
             this._scrollEl.style.top = this._scrollY + 'px';
             requestAnimationFrame(tick);
@@ -202,26 +191,56 @@ class CollageOpening {
 
     _stopAutoScroll() { this._scrollActive = false; }
 
-    // 等待最后一字底边滚入屏幕内，手机上停在52%高度留出下方空白
+    // 平滑滚动到目标位置（ease-out 动画）
+    _smoothScrollTo(targetScrollY, duration) {
+        if (this._smoothRaf) cancelAnimationFrame(this._smoothRaf);
+        const start = this._scrollY;
+        const delta = targetScrollY - start;
+        if (Math.abs(delta) < 2) return;
+        duration = duration || 700;
+        const t0 = performance.now();
+        const animate = (now) => {
+            const p = Math.min((now - t0) / duration, 1);
+            const ease = 1 - Math.pow(1 - p, 3);
+            this._scrollY = start + delta * ease;
+            this._scrollEl.style.top = this._scrollY + 'px';
+            if (p < 1) { this._smoothRaf = requestAnimationFrame(animate); }
+            else       { this._smoothRaf = null; }
+        };
+        this._smoothRaf = requestAnimationFrame(animate);
+    }
+
+    // 等待最后一字底边滚入屏幕内
     _scrollUntilVisible() {
         return new Promise(resolve => {
             if (!this._chars || !this._chars.length) { resolve(); return; }
-            const H        = this.overlay.clientHeight;
-            const isMobileL = typeof window !== 'undefined' && window.matchMedia
-                && window.matchMedia('(hover: none) and (orientation: landscape)').matches;
-            const targetY  = H * (isMobileL ? 0.52 : 0.72);
-            const deadline = performance.now() + 4000;
+            const H = this.overlay.clientHeight;
+            const targetY = H * (this._isMobileL ? 0.55 : 0.72);
 
+            if (this._skipFlag) { resolve(); return; }
+
+            const overlayTop = this.overlay.getBoundingClientRect().top;
+            const lastBottom = this._chars[this._chars.length - 1]
+                .getBoundingClientRect().bottom - overlayTop;
+
+            if (lastBottom <= targetY) { resolve(); return; }
+
+            if (this._isMobileL) {
+                // 手机：主动平滑滚入最后一字
+                this._smoothScrollTo(this._scrollY - (lastBottom - targetY), 800);
+                setTimeout(resolve, 850);
+                return;
+            }
+
+            // 桌面：等待匀速滚动到位
+            const deadline = performance.now() + 4000;
             const check = (now) => {
                 if (this._skipFlag || now >= deadline) { resolve(); return; }
-                const lastChar    = this._chars[this._chars.length - 1];
-                const overlayTop  = this.overlay.getBoundingClientRect().top;
-                const charBottom  = lastChar.getBoundingClientRect().bottom - overlayTop;
-                if (charBottom <= targetY) {
-                    resolve();
-                } else {
-                    requestAnimationFrame(check);
-                }
+                const lc = this._chars[this._chars.length - 1];
+                const ot = this.overlay.getBoundingClientRect().top;
+                const cb = lc.getBoundingClientRect().bottom - ot;
+                if (cb <= targetY) { resolve(); }
+                else { requestAnimationFrame(check); }
             };
             requestAnimationFrame(check);
         });
@@ -258,6 +277,10 @@ class CollageOpening {
         }
         stage.innerHTML = '';
 
+        // 检测手机横屏
+        this._isMobileL = typeof window !== 'undefined' && window.matchMedia
+            && window.matchMedia('(hover: none) and (orientation: landscape)').matches;
+
         const charInfos = this._buildFullText();
         this._chars = this._buildParagraphDOM(stage, charInfos);
         requestAnimationFrame(() => this._startScroll());
@@ -274,7 +297,7 @@ class CollageOpening {
             const line = NARRATION_OPENING[p].text;
             for (let c = 0; c < line.length; c++) {
                 const ch = line[c];
-                timeline.push({ idx: charIdx, t, ch });
+                timeline.push({ idx: charIdx, t, ch, isParaFirst: c === 0 });
                 const isPunct    = punct.has(ch);
                 const isParaFirst = c === 0;
                 t += isPunct ? BASE_DELAY + PUNCT_EXTRA : (isParaFirst ? BASE_DELAY * 3 : BASE_DELAY);
@@ -348,25 +371,20 @@ class CollageOpening {
         return new Promise(resolve => {
             if (this._skipFlag) { resolve(); return; }
             let i = 0;
-            const H = this.overlay.clientHeight;
+            const H = this._isMobileL ? this.overlay.clientHeight : 0;
             const run = () => {
                 if (this._skipFlag) { resolve(); return; }
                 if (i >= timeline.length) { resolve(); return; }
                 const entry = timeline[i++];
                 const el = this._chars[entry.idx];
-
-                // 手机横屏：确保当前字符在可见区域（跟随光标滚动）
-                if (this._isMobileL && this._scrollEl) {
-                    const overlayTop = this.overlay.getBoundingClientRect().top;
-                    const charBottom = el.getBoundingClientRect().bottom - overlayTop;
-                    // 如果字符在屏幕85%以下，滚动到把它带到屏幕65%位置
-                    if (charBottom > H * 0.85) {
-                        const scrollNeeded = charBottom - H * 0.65;
-                        this._scrollY -= scrollNeeded;
-                        this._scrollEl.style.top = this._scrollY + 'px';
+                // 手机：段落首字打字时，若不在屏幕内则平滑滚入
+                if (this._isMobileL && entry.isParaFirst && this._scrollEl) {
+                    const ot = this.overlay.getBoundingClientRect().top;
+                    const ct = el.getBoundingClientRect().top - ot;
+                    if (ct > H * 0.68 || ct < -10) {
+                        this._smoothScrollTo(this._scrollY - (ct - H * 0.35), 700);
                     }
                 }
-
                 el.classList.add('dropping');
                 if (entry.idx % 5 === 0 && typeof GameAudio !== 'undefined') {
                     GameAudio.playNarrationTyping();
