@@ -1144,7 +1144,7 @@ body {
 
 @media (hover: none) and (orientation: landscape) {
     #end-title   { font-size: clamp(28px, 6.5vw, 52px); margin-bottom: 8px; }
-    #end-message { font-size: 13px; margin: 0 auto 14px; max-width: 85vw; line-height: 1.6; padding: 0 8px; }
+    #end-message { font-size: 13px; margin: 0 auto 14px; max-width: 85vw; line-height: 1.75; padding: 0 8px; }
     #end-figure-canvas { margin-bottom: 6px !important; }
     .end-content { padding: 6px 16px; }
     #restart-btn { font-size: 15px; padding: 8px 26px; }
@@ -1426,6 +1426,15 @@ body {
     display: block;
     margin: 18px auto 0;
     font-size: 0.95em;
+    border: 2px solid var(--ochre);
+    background: rgba(196,163,90,0.15);
+    padding: 10px 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+#guide-close-btn:hover {
+    background: rgba(196,163,90,0.3);
 }
 
 /* ========== 合并面板：时间 + 任务 ========== */
@@ -2147,6 +2156,10 @@ body {
     #pigment-panel { left: auto; right: 58px; bottom: auto; top: 42%; transform: translateY(-50%); flex-direction: column; padding: 8px 6px; gap: 6px; border-width: 2px; border-radius: 18px; z-index: 50; }
     .pigment-slot  { width: 26px; height: 26px; border-width: 2px; }
 
+    /* ── 任务面板触摸展开支持 ── */
+    #quest-tracker.expanded #tracker-mini { opacity: 0; max-height: 0; pointer-events: none; }
+    #quest-tracker.expanded #quest-expand { max-height: 700px; opacity: 1; }
+
     /* ── 装备栏移到左侧状态栏下方 ── */
     #equip-panel   { bottom: auto; top: 70px; left: 6px; padding: 4px 8px; min-width: auto; border-radius: 7px; }
     .equip-label   { font-size: 9px; margin-bottom: 2px; letter-spacing: 1px; }
@@ -2163,7 +2176,8 @@ body {
     #dialog-text   { font-size: 11px; line-height: 1.4; }
 
     /* ── 弹出面板适配 ── */
-    .parchment-panel { min-width: auto; max-width: 90vw; padding: 14px 16px; max-height: 85vh; }
+    .parchment-panel { min-width: auto; max-width: 90vw; padding: 14px 16px; max-height: min(85vh, calc(100vh - 20px)); overflow-y: auto; scrollbar-width: thin; }
+    #recipes-list { max-height: 28vh; overflow-y: auto; scrollbar-width: thin; }
     .parchment-panel h2 { font-size: 22px; margin-bottom: 10px; padding-bottom: 6px; }
     #inventory-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 8px; }
     .inventory-slot { width: 42px; height: 42px; }
@@ -2193,6 +2207,12 @@ body {
     -webkit-user-select: none;
 }
 #mobile-controls.hidden { display: none !important; }
+
+/* ── 超小屏幕适配（高度<380px） ── */
+@media (hover: none) and (orientation: landscape) and (max-height: 380px) {
+    #pigment-panel { top: 35%; }
+    .pigment-slot  { width: 22px; height: 22px; }
+}
 
 @media (hover: hover) and (pointer: fine) {
     #mobile-controls { display: none !important; }

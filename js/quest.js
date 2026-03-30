@@ -150,6 +150,15 @@ class QuestSystem {
             arrowLabel: document.getElementById('quest-arrow-label')
         };
         
+        // 手机端：触摸切换展开/折叠
+        if (this.els.tracker) {
+            this.els.tracker.addEventListener('touchstart', (e) => {
+                // 防止与内部按钮冲突
+                if (e.target.closest('button')) return;
+                this.els.tracker.classList.toggle('expanded');
+            }, { passive: true });
+        }
+        
         this.lastNotifiedStage = -1;
     }
     

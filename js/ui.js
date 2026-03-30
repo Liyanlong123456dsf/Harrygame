@@ -355,6 +355,9 @@ class UI {
     }
     
     showItemTooltip(event, slotIndex) {
+        // 先隐藏旧tooltip，防止连续点击时闪烁
+        this.hideTooltip();
+
         const items = this.game.player.inventory.getAllItems();
         const item = items[slotIndex];
         
@@ -577,7 +580,8 @@ class UI {
             } else {
                 el.innerHTML = '';
                 el.classList.remove('filled');
-                el.title = '拖入材料或点击左侧物品';
+                const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+                el.title = isTouchDevice ? '点击左侧材料添加' : '拖入材料或点击左侧物品';
             }
         });
     }
