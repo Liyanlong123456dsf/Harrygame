@@ -1144,7 +1144,7 @@ body {
 
 @media (hover: none) and (orientation: landscape) {
     #end-title   { font-size: clamp(28px, 6.5vw, 52px); margin-bottom: 8px; }
-    #end-message { font-size: 12px; margin-bottom: 14px; max-width: 75vw; line-height: 1.5; }
+    #end-message { font-size: 13px; margin: 0 auto 14px; max-width: 85vw; line-height: 1.6; padding: 0 8px; }
     #end-figure-canvas { margin-bottom: 6px !important; }
     .end-content { padding: 6px 16px; }
     #restart-btn { font-size: 15px; padding: 8px 26px; }
@@ -1187,9 +1187,13 @@ body {
 #end-message {
     font-size: 18px;
     color: rgba(244, 228, 188, 0.82);
-    margin-bottom: 40px;
-    max-width: 480px;
-    line-height: 1.7;
+    margin: 0 auto 40px;
+    max-width: 600px;
+    line-height: 1.8;
+    word-break: break-all;
+    word-break: auto-phrase;   /* Chrome 119+：按语义短语断行 */
+    overflow-wrap: break-word;
+    padding: 0 12px;
 }
 
 /* ========== 提示信息 ========== */
@@ -2139,12 +2143,12 @@ body {
     #quest-mini-pct     { font-size: 8px; min-width: 18px; }
     #tracker-mini       { gap: 3px; }
 
-    /* ── 颜料槽缩小并上移避开操作杆 ── */
-    #pigment-panel { padding: 6px 12px; gap: 8px; bottom: 155px; border-width: 2px; border-radius: 18px; }
-    .pigment-slot  { width: 28px; height: 28px; border-width: 2px; }
+    /* ── 颜料槽移到右侧中部，避免遮挡玩家和操作按钮 ── */
+    #pigment-panel { left: auto; right: 58px; bottom: auto; top: 42%; transform: translateY(-50%); flex-direction: column; padding: 8px 6px; gap: 6px; border-width: 2px; border-radius: 18px; z-index: 50; }
+    .pigment-slot  { width: 26px; height: 26px; border-width: 2px; }
 
-    /* ── 装备栏缩小并上移避开操作杆 ── */
-    #equip-panel   { bottom: 155px; left: 6px; padding: 4px 8px; min-width: auto; border-radius: 7px; }
+    /* ── 装备栏移到左侧状态栏下方 ── */
+    #equip-panel   { bottom: auto; top: 70px; left: 6px; padding: 4px 8px; min-width: auto; border-radius: 7px; }
     .equip-label   { font-size: 9px; margin-bottom: 2px; letter-spacing: 1px; }
     .equip-slot    { padding: 3px 6px; min-height: 22px; gap: 4px; }
     .equip-icon    { width: 16px; height: 16px; }

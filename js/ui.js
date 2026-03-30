@@ -76,6 +76,8 @@ class UI {
             btn.addEventListener('click', (e) => {
                 e.target.closest('.screen').classList.add('hidden');
                 this.game.paused = false;
+                this.hideTooltip();
+                this._returnSlotsToInventory();
             });
         });
         
@@ -107,6 +109,11 @@ class UI {
         this.elements.dialogBox.addEventListener('click', () => {
             this.hideDialog();
         });
+
+        // 手机端：任意触摸隐藏tooltip（mouseenter/mouseleave在触屏上不可靠）
+        document.addEventListener('touchstart', () => {
+            this.hideTooltip();
+        }, { passive: true });
 
         // 装备槽点击 → 卸下装备
         this.elements.equipWeaponSlot.addEventListener('click', () => {
@@ -302,8 +309,9 @@ class UI {
             this.game.paused = false;
         }
         
-        // 关闭合成界面
+        // 关闭合成界面 + 隐藏残留tooltip
         this.elements.craftScreen.classList.add('hidden');
+        this.hideTooltip();
     }
     
     refreshInventory() {
@@ -358,6 +366,10 @@ class UI {
             `;
             this.elements.tooltip.classList.remove('hidden');
             this.positionTooltip(event);
+
+            // 自动隐藏（防止手机端mouseleave不触发导致tooltip卡住）
+            clearTimeout(this._tooltipAutoHide);
+            this._tooltipAutoHide = setTimeout(() => this.hideTooltip(), 3000);
         }
     }
     
@@ -373,6 +385,7 @@ class UI {
     }
     
     hideTooltip() {
+        clearTimeout(this._tooltipAutoHide);
         this.elements.tooltip.classList.add('hidden');
     }
     
@@ -399,8 +412,9 @@ class UI {
             this.game.paused = false;
         }
 
-        // 关闭背包
+        // 关闭背包 + 隐藏残留tooltip
         this.elements.inventoryScreen.classList.add('hidden');
+        this.hideTooltip();
     }
 
     // — 左侧材料背包 —
@@ -782,6 +796,9 @@ class UI {
             return;
         }
         
+        // 清除上一个打字机interval（防止泄漏）
+        if (this._typeInterval) { clearInterval(this._typeInterval); this._typeInterval = null; }
+
         this.currentDialog = this.dialogQueue.shift();
         this.elements.dialogText.textContent = '';
         this.elements.dialogBox.classList.remove('hidden');
@@ -789,12 +806,13 @@ class UI {
         // 打字机效果
         let charIndex = 0;
         const text = this.currentDialog.text;
-        const typeInterval = setInterval(() => {
+        this._typeInterval = setInterval(() => {
             if (charIndex < text.length) {
                 this.elements.dialogText.textContent += text[charIndex];
                 charIndex++;
             } else {
-                clearInterval(typeInterval);
+                clearInterval(this._typeInterval);
+                this._typeInterval = null;
                 this.dialogTimer = this.currentDialog.duration;
             }
         }, 50);
@@ -811,6 +829,7 @@ class UI {
     }
     
     hideDialog() {
+        if (this._typeInterval) { clearInterval(this._typeInterval); this._typeInterval = null; }
         this.elements.dialogBox.classList.add('hidden');
         this.currentDialog = null;
         this.dialogTimer = 0;
