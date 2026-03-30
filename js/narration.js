@@ -168,22 +168,23 @@ class CollageOpening {
     _startScroll() {
         this._scrollActive = true;
         const H = this.overlay.clientHeight;
-        const isMobileL = typeof window !== 'undefined' && window.matchMedia
+        this._isMobileL = typeof window !== 'undefined' && window.matchMedia
             && window.matchMedia('(hover: none) and (orientation: landscape)').matches;
         // 手机起始位置稍高，保证第4段在打字时已滚入屏幕
-        this._scrollY = H * (isMobileL ? 0.45 : 0.52);
+        this._scrollY = H * (this._isMobileL ? 0.45 : 0.52);
         this._scrollEl.style.top = this._scrollY + 'px';
 
-        const SPEED = 57; // px/s（统一速度，由提前停止而非加速保证可见性）
-        // 手机上：当最后一字到达60%高度时提前停止，防止内容过度滚出屏幕
-        const earlyStopTarget = isMobileL ? H * 0.60 : -Infinity;
+        // 手机横屏降低滚动速度，让打字动画更清晰可见
+        const SPEED = this._isMobileL ? 35 : 57; // px/s
+        // 手机上：当最后一字到达60%高度时提前停止
+        const earlyStopTarget = this._isMobileL ? H * 0.60 : -Infinity;
         let lastTs = performance.now();
         const tick = (now) => {
             if (!this._scrollActive) return;
             const dt = (now - lastTs) / 1000;
             lastTs = now;
             // 检查最后一字是否已到达停止目标
-            if (isMobileL && this._chars && this._chars.length > 0) {
+            if (this._isMobileL && this._chars && this._chars.length > 0) {
                 const overlayTop = this.overlay.getBoundingClientRect().top;
                 const lastBottom = this._chars[this._chars.length - 1]
                     .getBoundingClientRect().bottom - overlayTop;
@@ -347,11 +348,25 @@ class CollageOpening {
         return new Promise(resolve => {
             if (this._skipFlag) { resolve(); return; }
             let i = 0;
+            const H = this.overlay.clientHeight;
             const run = () => {
                 if (this._skipFlag) { resolve(); return; }
                 if (i >= timeline.length) { resolve(); return; }
                 const entry = timeline[i++];
                 const el = this._chars[entry.idx];
+
+                // 手机横屏：确保当前字符在可见区域（跟随光标滚动）
+                if (this._isMobileL && this._scrollEl) {
+                    const overlayTop = this.overlay.getBoundingClientRect().top;
+                    const charBottom = el.getBoundingClientRect().bottom - overlayTop;
+                    // 如果字符在屏幕85%以下，滚动到把它带到屏幕65%位置
+                    if (charBottom > H * 0.85) {
+                        const scrollNeeded = charBottom - H * 0.65;
+                        this._scrollY -= scrollNeeded;
+                        this._scrollEl.style.top = this._scrollY + 'px';
+                    }
+                }
+
                 el.classList.add('dropping');
                 if (entry.idx % 5 === 0 && typeof GameAudio !== 'undefined') {
                     GameAudio.playNarrationTyping();
