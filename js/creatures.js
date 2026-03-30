@@ -42,11 +42,38 @@ class Creature {
         this.hp -= amount;
         // 受伤闪白
         this.hitFlash = 0.25;
+        
+        // 受伤墨迹粒子
+        Particles.emit({
+            x: this.x,
+            y: this.y,
+            count: 5,
+            type: 'ink',
+            color: this.deathColor || '#3A3A4E',
+            speed: 2,
+            angleSpread: Math.PI,
+            life: 0.4,
+            size: 6
+        });
+        
         if (this.hp <= 0) {
             this.hp = 0;
             this.alive = false;
             this.dying = true;
             this.deathTimer = 0;
+            
+            // 死亡粒子爆发
+            Particles.emit({
+                x: this.x,
+                y: this.y,
+                count: 12,
+                type: 'ink',
+                color: this.deathColor || '#3A3A4E',
+                speed: 3.5,
+                angleSpread: Math.PI,
+                life: 0.6,
+                size: 10
+            });
         }
     }
     

@@ -118,6 +118,7 @@ const CraftedItems = {
         name: '暖阳颜料',
         description: '回复墨韵值+35，周围场景色彩饱和度临时提升',
         color: '#FFB347',
+        category: 'survival',
         recipe: [
             { item: 'stardustGrass', count: 2 },
             { item: 'morningDew', count: 1 },
@@ -138,6 +139,7 @@ const CraftedItems = {
         name: '纸灯',
         description: '照明半径4格，每夜持续8分钟，纸温值回复+5/分钟',
         color: '#FFE4B5',
+        category: 'survival',
         recipe: [
             { item: 'charBranch', count: 3 },
             { item: 'stardustGrass', count: 1 },
@@ -156,6 +158,7 @@ const CraftedItems = {
         name: '澄墨水',
         description: '古钟润滑剂的原料，墨韵值+10',
         color: '#3A3A5E',
+        category: 'key',
         recipe: [
             { item: 'charBranch', count: 2 },
             { item: 'morningDew', count: 2 }
@@ -172,6 +175,7 @@ const CraftedItems = {
         name: '七彩液',
         description: '三色彩实融合而成的神奇液体',
         color: '#FF69B4',
+        category: 'key',
         recipe: [
             { item: 'colorFruitRed', count: 1 },
             { item: 'colorFruitYellow', count: 1 },
@@ -186,6 +190,7 @@ const CraftedItems = {
         name: '古钟润滑剂',
         description: '修复古钟碎片的必要消耗品',
         color: '#C4A35A',
+        category: 'key',
         recipe: [
             { item: 'rainbowLiquid', count: 1 },
             { item: 'clearInk', count: 1 },
@@ -201,6 +206,7 @@ const CraftedItems = {
         name: '安心茶',
         description: '恢复墨韵值+25，消除恐惧状态',
         color: '#90EE90',
+        category: 'survival',
         recipe: [
             { item: 'morningDew', count: 2 },
             { item: 'stardustGrass', count: 1 }
@@ -218,6 +224,7 @@ const CraftedItems = {
         name: '炭笔',
         description: '战斗道具，攻击力+15',
         color: '#1A1A2E',
+        category: 'weapon',
         recipe: [
             { item: 'charBranch', count: 5 }
         ],
@@ -232,6 +239,7 @@ const CraftedItems = {
         name: '灰幕弹',
         description: '投掷型迷雾道具，使敌人迷失方向',
         color: '#696969',
+        category: 'weapon',
         recipe: [
             { item: 'grayFluff', count: 5 },
             { item: 'charBranch', count: 1 }

@@ -81,16 +81,19 @@ class UI {
             });
         });
         
-        // 颜料槽点击
+        // 颜料槽点击（添加消耗波动动画）
         this.elements.pigmentRed.addEventListener('click', () => {
+            this._triggerPigmentDrain(this.elements.pigmentRed);
             this.game.player.usePigment('red');
             this.updatePigments();
         });
         this.elements.pigmentYellow.addEventListener('click', () => {
+            this._triggerPigmentDrain(this.elements.pigmentYellow);
             this.game.player.usePigment('yellow');
             this.updatePigments();
         });
         this.elements.pigmentBlue.addEventListener('click', () => {
+            this._triggerPigmentDrain(this.elements.pigmentBlue);
             this.game.player.usePigment('blue');
             this.updatePigments();
         });
@@ -135,6 +138,21 @@ class UI {
             slot.addEventListener('click', () => this.onInventorySlotClick(i));
             slot.addEventListener('mouseenter', (e) => this.showItemTooltip(e, i));
             slot.addEventListener('mouseleave', () => this.hideTooltip());
+            
+            // 触屏长按显示tooltip
+            let longPressTimer = null;
+            slot.addEventListener('touchstart', (e) => {
+                longPressTimer = setTimeout(() => {
+                    this.showItemTooltip(e.touches[0], i);
+                }, 500);
+            }, { passive: true });
+            slot.addEventListener('touchend', () => {
+                clearTimeout(longPressTimer);
+            }, { passive: true });
+            slot.addEventListener('touchmove', () => {
+                clearTimeout(longPressTimer);
+            }, { passive: true });
+            
             this.elements.inventoryGrid.appendChild(slot);
         }
     }
@@ -184,6 +202,21 @@ class UI {
         } else if (percent < 40) {
             element.classList.add('warning');
         }
+    }
+
+    // 显示数值变化浮动文字
+    showStatChange(statType, delta) {
+        if (delta === 0) return;
+        const statMap = { color: 'colorStat', ink: 'inkStat', warmth: 'warmthStat' };
+        const statEl = this.elements[statMap[statType]];
+        if (!statEl) return;
+
+        const floatEl = document.createElement('div');
+        floatEl.className = 'stat-float ' + (delta > 0 ? 'positive' : 'negative');
+        floatEl.textContent = (delta > 0 ? '+' : '') + Math.round(delta);
+        statEl.style.position = 'relative';
+        statEl.appendChild(floatEl);
+        setTimeout(() => floatEl.remove(), 1200);
     }
     
     updateEquipPanel() {
@@ -295,6 +328,15 @@ class UI {
         updateSlot(this.elements.pigmentYellow, player.pigments.yellow, player.maxPigment);
         updateSlot(this.elements.pigmentBlue, player.pigments.blue, player.maxPigment);
     }
+
+    // 颜料消耗波动动画
+    _triggerPigmentDrain(slotEl) {
+        const fill = slotEl.querySelector('.pigment-fill');
+        if (fill) {
+            fill.classList.add('draining');
+            setTimeout(() => fill.classList.remove('draining'), 400);
+        }
+    }
     
     toggleInventory() {
         const screen = this.elements.inventoryScreen;
@@ -318,11 +360,16 @@ class UI {
         const items = this.game.player.inventory.getAllItems();
         const slots = this.elements.inventoryGrid.querySelectorAll('.inventory-slot');
         
+        // 记录旧物品状态用于检测新增
+        const oldItems = this._lastInventorySnapshot || {};
+        const newSnapshot = {};
+        
         slots.forEach((slot, index) => {
             slot.innerHTML = '';
             
             if (items[index]) {
                 const item = items[index];
+                newSnapshot[item.id] = (newSnapshot[item.id] || 0) + item.count;
                 
                 const icon = document.createElement('div');
                 icon.className = 'item-icon';
@@ -335,10 +382,19 @@ class UI {
                 slot.appendChild(icon);
                 slot.appendChild(count);
                 slot.dataset.itemId = item.id;
+                
+                // 检测是否为新增物品，添加闪光
+                const oldCount = oldItems[item.id] || 0;
+                if (item.count > oldCount) {
+                    slot.classList.add('item-new');
+                    setTimeout(() => slot.classList.remove('item-new'), 1200);
+                }
             } else {
                 slot.dataset.itemId = '';
             }
         });
+        
+        this._lastInventorySnapshot = newSnapshot;
     }
     
     onInventorySlotClick(slotIndex) {
@@ -687,17 +743,35 @@ class UI {
         GameAudio.playCraft();
         this.showDialog(`成功制作了 ${recipe.name}！`);
 
+        // 合成成功粒子特效
+        const rect = this.elements.craftResult.getBoundingClientRect();
+        Particles.emit({
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            count: 15,
+            type: 'sparkle',
+            color: '#FFD700',
+            speed: 2.5,
+            angleSpread: Math.PI,
+            life: 0.7,
+            size: 8
+        });
+
         // 通知任务系统
         if (this.game.quest) {
             this.game.quest.onCraftItem();
         }
 
-        // 显示结果动画
+        // 显示结果动画 + 闪光
+        this.elements.craftResult.classList.add('success');
         this.elements.craftResult.innerHTML = `
             <div class="item-icon" style="background-color:${recipe.color};width:50px;height:50px;border-radius:50%;margin:0 auto;"></div>
             <p>${recipe.name}</p>
         `;
-        setTimeout(() => { this.elements.craftResult.innerHTML = ''; }, 2000);
+        setTimeout(() => {
+            this.elements.craftResult.innerHTML = '';
+            this.elements.craftResult.classList.remove('success');
+        }, 2000);
 
         // 清空调色槽并刷新
         this._returnSlotsToInventory();
@@ -717,42 +791,73 @@ class UI {
     refreshRecipes() {
         const recipes = Object.values(CraftedItems);
         this.elements.recipesList.innerHTML = '<h3>配方参考</h3>';
-
+        
+        // 按类别分组
+        const categories = {
+            survival: { label: '🛡️ 生存', items: [] },
+            weapon: { label: '⚔️ 武器', items: [] },
+            key: { label: '🔑 关键', items: [] }
+        };
+        
         for (const recipe of recipes) {
-            const canCraft = this.checkCanCraft(recipe);
-
-            const recipeDiv = document.createElement('div');
-            recipeDiv.className = 'recipe-item' + (canCraft ? '' : ' unavailable');
-
-            const ingredientText = recipe.recipe.map(ing => {
-                return `${this.getItemName(ing.item)}×${ing.count}`;
-            }).join(' + ');
-
-            recipeDiv.innerHTML = `
-                <div class="item-icon" style="background-color:${recipe.color};width:30px;height:30px;border-radius:50%;"></div>
-                <div>
-                    <strong>${recipe.name}</strong><br>
-                    <small>${ingredientText}</small>
-                </div>
-            `;
-
-            // 点击配方 → 自动填充调色槽
-            recipeDiv.addEventListener('click', () => {
-                if (!canCraft) return;
-                this._returnSlotsToInventory();
-                let slotIdx = 0;
-                for (const ing of recipe.recipe) {
-                    if (slotIdx >= 4) break;
-                    this._addToSlot(slotIdx, ing.item, ing.count);
-                    slotIdx++;
-                }
-                this.refreshCraftInventory();
-                this._renderSlots();
-                this.updateCraftPreview();
-            });
-
-            this.elements.recipesList.appendChild(recipeDiv);
+            const cat = recipe.category || 'survival';
+            if (categories[cat]) {
+                categories[cat].items.push(recipe);
+            } else {
+                categories.survival.items.push(recipe);
+            }
         }
+        
+        // 渲染各分类
+        for (const [catKey, catData] of Object.entries(categories)) {
+            if (catData.items.length === 0) continue;
+            
+            const catLabel = document.createElement('div');
+            catLabel.className = 'recipe-category';
+            catLabel.style.cssText = 'font-size:12px;color:var(--ochre);margin:8px 0 4px;font-weight:bold;';
+            catLabel.textContent = catData.label;
+            this.elements.recipesList.appendChild(catLabel);
+            
+            for (const recipe of catData.items) {
+                this._renderRecipeItem(recipe);
+            }
+        }
+    }
+    
+    _renderRecipeItem(recipe) {
+        const canCraft = this.checkCanCraft(recipe);
+
+        const recipeDiv = document.createElement('div');
+        recipeDiv.className = 'recipe-item' + (canCraft ? '' : ' unavailable');
+
+        const ingredientText = recipe.recipe.map(ing => {
+            return `${this.getItemName(ing.item)}×${ing.count}`;
+        }).join(' + ');
+
+        recipeDiv.innerHTML = `
+            <div class="item-icon" style="background-color:${recipe.color};width:30px;height:30px;border-radius:50%;"></div>
+            <div>
+                <strong>${recipe.name}</strong><br>
+                <small>${ingredientText}</small>
+            </div>
+        `;
+
+        // 点击配方 → 自动填充调色槽
+        recipeDiv.addEventListener('click', () => {
+            if (!canCraft) return;
+            this._returnSlotsToInventory();
+            let slotIdx = 0;
+            for (const ing of recipe.recipe) {
+                if (slotIdx >= 4) break;
+                this._addToSlot(slotIdx, ing.item, ing.count);
+                slotIdx++;
+            }
+            this.refreshCraftInventory();
+            this._renderSlots();
+            this.updateCraftPreview();
+        });
+
+        this.elements.recipesList.appendChild(recipeDiv);
     }
 
     checkCanCraft(recipe) {

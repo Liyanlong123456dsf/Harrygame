@@ -236,11 +236,28 @@ class Player {
         if (this.stats[stat] !== undefined) {
             // 无敌模式：拦截所有负值扣减
             if (amount < 0 && window.game && window.game.cheat && window.game.cheat.invincible) return;
+            
+            const oldVal = this.stats[stat];
             this.stats[stat] = Utils.clamp(
                 this.stats[stat] + amount,
                 0,
                 this.maxStats[stat]
             );
+            const actualDelta = this.stats[stat] - oldVal;
+            
+            // 显著变化时显示浮动文字（|delta| >= 5）
+            if (Math.abs(actualDelta) >= 5 && window.game && window.game.ui) {
+                window.game.ui.showStatChange(stat, actualDelta);
+            }
+            
+            // 受伤时屏幕闪红（色值下降 >= 8）
+            if (stat === 'color' && actualDelta <= -8) {
+                const vignette = document.getElementById('damage-vignette');
+                if (vignette) {
+                    vignette.classList.add('flash');
+                    setTimeout(() => vignette.classList.remove('flash'), 200);
+                }
+            }
         }
     }
     

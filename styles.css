@@ -345,7 +345,10 @@ body {
 }
 
 .parchment-btn:active {
-    transform: translateY(0);
+    transform: translateY(1px) scale(0.98);
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.3),
+        inset 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .credits {
@@ -771,11 +774,11 @@ body {
 .equip-effect {
     margin-top: 6px;
     font-size: 11px;
-    color: var(--deep-purple);
+    color: var(--terracotta);
     line-height: 1.5;
     min-height: 16px;
     text-align: left;
-    opacity: 0.8;
+    font-weight: bold;
 }
 
 /* UI按钮 */
@@ -1221,6 +1224,96 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* 面板入场动画 */
+@keyframes panelSlideIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.parchment-panel {
+    animation: panelSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 物品获取闪光 */
+@keyframes itemNewGlow {
+    0%, 100% { box-shadow: inset 0 0 0 0 rgba(255,215,0,0); }
+    50%      { box-shadow: inset 0 0 12px 2px rgba(255,215,0,0.6), 0 0 8px rgba(255,215,0,0.4); }
+}
+.inventory-slot.item-new {
+    animation: itemNewGlow 0.6s ease-out 2;
+}
+
+/* 对话框弹出动画 */
+@keyframes dialogPop {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.92); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+#dialog-box:not(.hidden) {
+    animation: dialogPop 0.25s ease-out forwards;
+}
+
+/* 数值浮动文字 */
+@keyframes statFloatUp {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-24px); }
+}
+.stat-float {
+    position: absolute;
+    right: -35px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 15px;
+    font-weight: bold;
+    animation: statFloatUp 1.2s ease-out forwards;
+    pointer-events: none;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.stat-float.positive { color: #7A9F5A; }
+.stat-float.negative { color: #C2452D; }
+
+/* 颜料消耗波动 */
+@keyframes pigmentDrain {
+    0%   { transform: scaleY(1); }
+    30%  { transform: scaleY(0.95); }
+    60%  { transform: scaleY(1.02); }
+    100% { transform: scaleY(1); }
+}
+.pigment-fill.draining {
+    animation: pigmentDrain 0.4s ease-out;
+}
+
+/* 受伤屏幕闪红 */
+#damage-vignette {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 15;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(194,69,45,0.45) 100%);
+    opacity: 0;
+    transition: opacity 0.1s ease;
+}
+#damage-vignette.flash {
+    opacity: 1;
+}
+
+/* 合成成功闪光 */
+@keyframes craftSuccessFlash {
+    0%   { box-shadow: 0 0 0 0 rgba(255,215,0,0.8); }
+    50%  { box-shadow: 0 0 30px 10px rgba(255,215,0,0.5); }
+    100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
+}
+#craft-result.success {
+    animation: craftSuccessFlash 0.6s ease-out;
+}
+
+/* 古钟碎片收集特效 */
+@keyframes clockPieceCollect {
+    0%   { transform: scale(1) rotate(0deg); opacity: 1; }
+    50%  { transform: scale(1.3) rotate(180deg); opacity: 0.8; }
+    100% { transform: scale(0) rotate(360deg); opacity: 0; }
 }
 
 @keyframes pulse {
@@ -2173,7 +2266,7 @@ body {
 
     /* ── 对话框上移避开操作区 ── */
     #dialog-box    { bottom: auto; top: 6px; left: 50%; padding: 6px 14px; max-width: 52vw; border-width: 2px; border-radius: 8px; }
-    #dialog-text   { font-size: 11px; line-height: 1.4; }
+    #dialog-text   { font-size: 12px; line-height: 1.5; }
 
     /* ── 弹出面板适配 ── */
     .parchment-panel { min-width: auto; max-width: 90vw; padding: 14px 16px; max-height: min(85vh, calc(100vh - 20px)); overflow-y: auto; scrollbar-width: thin; }
