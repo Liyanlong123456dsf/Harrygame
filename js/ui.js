@@ -743,19 +743,20 @@ class UI {
         GameAudio.playCraft();
         this.showDialog(`成功制作了 ${recipe.name}！`);
 
-        // 合成成功粒子特效
-        const rect = this.elements.craftResult.getBoundingClientRect();
-        Particles.emit({
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2,
-            count: 15,
-            type: 'sparkle',
-            color: '#FFD700',
-            speed: 2.5,
-            angleSpread: Math.PI,
-            life: 0.7,
-            size: 8
-        });
+        // 合成成功粒子特效（使用玩家位置，因为粒子系统在世界坐标中渲染）
+        if (this.game.player) {
+            Particles.emit({
+                x: this.game.player.x,
+                y: this.game.player.y - 20,
+                count: 15,
+                type: 'sparkle',
+                color: '#FFD700',
+                speed: 2.5,
+                angleSpread: Math.PI,
+                life: 0.7,
+                size: 8
+            });
+        }
 
         // 通知任务系统
         if (this.game.quest) {
