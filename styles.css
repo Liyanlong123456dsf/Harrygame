@@ -1743,6 +1743,12 @@ body {
     word-break: break-all;
 }
 
+/* 手机横屏：缩小段落间距，减少总内容高度，确保后段文字在打字时已入屏 */
+@media (hover: none) and (orientation: landscape) {
+    .collage-para { margin-bottom: 0.8em; }
+    #collage-scroll { padding-bottom: 10vh; }
+}
+
 /* 每个字符的剪报片段——inline-block 流式排布 */
 .collage-char {
     display: inline-block;

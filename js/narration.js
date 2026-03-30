@@ -168,11 +168,13 @@ class CollageOpening {
     _startScroll() {
         this._scrollActive = true;
         const H = this.overlay.clientHeight;
-        // 首行从屏幕52%高度处开始（立即可见，无需等待）
-        this._scrollY = H * 0.52;
+        // 手机横屏：起始位置更靠上，保证第4段在打字时已滚入屏幕
+        const isMobileL = typeof window !== 'undefined' && window.matchMedia
+            && window.matchMedia('(hover: none) and (orientation: landscape)').matches;
+        this._scrollY = H * (isMobileL ? 0.40 : 0.52);
         this._scrollEl.style.top = this._scrollY + 'px';
 
-        const SPEED = 57; // px/s
+        const SPEED = isMobileL ? 85 : 57; // px/s（手机更快，保证段落入屏）
         let lastTs = performance.now();
         const tick = (now) => {
             if (!this._scrollActive) return;
@@ -187,13 +189,15 @@ class CollageOpening {
 
     _stopAutoScroll() { this._scrollActive = false; }
 
-    // 等待最后一字底边滚入屏幕72%高度以内
+    // 等待最后一字底边滚入屏幕内，手机上停在52%高度留出下方空白
     _scrollUntilVisible() {
         return new Promise(resolve => {
             if (!this._chars || !this._chars.length) { resolve(); return; }
             const H        = this.overlay.clientHeight;
-            const targetY  = H * 0.72;
-            const deadline = performance.now() + 3000;
+            const isMobileL = typeof window !== 'undefined' && window.matchMedia
+                && window.matchMedia('(hover: none) and (orientation: landscape)').matches;
+            const targetY  = H * (isMobileL ? 0.52 : 0.72);
+            const deadline = performance.now() + 4000;
 
             const check = (now) => {
                 if (this._skipFlag || now >= deadline) { resolve(); return; }
