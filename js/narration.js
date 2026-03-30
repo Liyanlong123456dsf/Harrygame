@@ -168,18 +168,30 @@ class CollageOpening {
     _startScroll() {
         this._scrollActive = true;
         const H = this.overlay.clientHeight;
-        // 手机横屏：起始位置更靠上，保证第4段在打字时已滚入屏幕
         const isMobileL = typeof window !== 'undefined' && window.matchMedia
             && window.matchMedia('(hover: none) and (orientation: landscape)').matches;
-        this._scrollY = H * (isMobileL ? 0.40 : 0.52);
+        // 手机起始位置稍高，保证第4段在打字时已滚入屏幕
+        this._scrollY = H * (isMobileL ? 0.45 : 0.52);
         this._scrollEl.style.top = this._scrollY + 'px';
 
-        const SPEED = isMobileL ? 85 : 57; // px/s（手机更快，保证段落入屏）
+        const SPEED = 57; // px/s（统一速度，由提前停止而非加速保证可见性）
+        // 手机上：当最后一字到达60%高度时提前停止，防止内容过度滚出屏幕
+        const earlyStopTarget = isMobileL ? H * 0.60 : -Infinity;
         let lastTs = performance.now();
         const tick = (now) => {
             if (!this._scrollActive) return;
             const dt = (now - lastTs) / 1000;
             lastTs = now;
+            // 检查最后一字是否已到达停止目标
+            if (isMobileL && this._chars && this._chars.length > 0) {
+                const overlayTop = this.overlay.getBoundingClientRect().top;
+                const lastBottom = this._chars[this._chars.length - 1]
+                    .getBoundingClientRect().bottom - overlayTop;
+                if (lastBottom <= earlyStopTarget) {
+                    this._scrollActive = false;
+                    return;
+                }
+            }
             this._scrollY -= SPEED * dt;
             this._scrollEl.style.top = this._scrollY + 'px';
             requestAnimationFrame(tick);
