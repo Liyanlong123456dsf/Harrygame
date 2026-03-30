@@ -840,7 +840,6 @@ class IntroAnimation {
 
         // 新字符出现时播放打字音效
         if (targetRevealed > this._typewriterRevealed) {
-            // 每2-3个字符播放一次声音，避免太密集
             const diff = targetRevealed - this._typewriterRevealed;
             if (diff >= 1 && targetRevealed % 3 === 0) {
                 if (typeof GameAudio !== 'undefined' && GameAudio.initialized) {
@@ -850,7 +849,12 @@ class IntroAnimation {
             this._typewriterRevealed = targetRevealed;
         }
 
-        const bigSize = Math.round(fontSize * 3);
+        // 手机横屏检测：缩小字号防止溢出
+        const isMobileL = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        const scale = (isMobileL && W < 900) ? 0.55 : 1.0;
+        const bigSize = Math.round(fontSize * 3 * scale);
+        const maxLineW = W * 0.88; // 最大行宽
+
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.font = `${bigSize}px 'Ma Shan Zheng', serif`;
@@ -860,8 +864,28 @@ class IntroAnimation {
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur  = 14;
 
-        // 按行截取已显示的字符
-        const lines = text.split('\n');
+        // 将原始行按画布宽度自动换行
+        const rawLines = text.split('\n');
+        const lines = [];
+        rawLines.forEach(line => {
+            if (ctx.measureText(line).width <= maxLineW) {
+                lines.push(line);
+            } else {
+                // 逐字拆行
+                let cur = '';
+                for (const ch of line) {
+                    const test = cur + ch;
+                    if (ctx.measureText(test).width > maxLineW && cur.length > 0) {
+                        lines.push(cur);
+                        cur = ch;
+                    } else {
+                        cur = test;
+                    }
+                }
+                if (cur) lines.push(cur);
+            }
+        });
+
         const lineH  = bigSize * 1.6;
         const textX  = W * 0.95;
         const startY = H * 0.5 - (lines.length - 1) * lineH / 2;
@@ -877,7 +901,6 @@ class IntroAnimation {
         if (this._typewriterRevealed < totalChars) {
             const cursorAlpha = (Math.sin(this._typewriterTimer * 6) + 1) * 0.5;
             ctx.globalAlpha = alpha * cursorAlpha;
-            // 找到光标位置
             let cursorChars = this._typewriterRevealed;
             let cursorLine = 0;
             for (let i = 0; i < lines.length; i++) {

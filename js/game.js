@@ -21,6 +21,8 @@ class Game {
         };
         
         this.camera = { x: 0, y: 0 };
+        // 手机端缩放视野：小于1表示缩小画面看到更多世界
+        this.cameraZoom = 1;
         
         this.paused = false;
         this.gameStarted = false;
@@ -593,10 +595,15 @@ class Game {
         this.quest = new QuestSystem(this);
         
         // 显示开场对话
+        const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
         setTimeout(() => {
             this.ui.showDialog('你来到了褪色界...在三日内修复古钟，才能回到人间。');
             setTimeout(() => {
-                this.ui.showDialog('按 WASD 移动，E 采集/交互，空格 攻击，I 背包，C 合成');
+                if (isMobile) {
+                    this.ui.showDialog('左侧摇杆移动，右侧按钮：拾取采集、攻击、背包、调色');
+                } else {
+                    this.ui.showDialog('按 WASD 移动，E 采集/交互，空格 攻击，I 背包，C 合成');
+                }
             }, 4000);
         }, 1000);
         
@@ -605,6 +612,10 @@ class Game {
         
         this.gameStarted = true;
         this.lastTime = performance.now();
+        // 手机横屏：缩小镜头以扩大视野
+        if (isMobile && window.innerHeight < 500) {
+            this.cameraZoom = 0.65;
+        }
         if (this.mobileControls) this.mobileControls.show();
         if (screen.orientation && screen.orientation.lock) {
             screen.orientation.lock('landscape').catch(() => {});
@@ -670,16 +681,19 @@ class Game {
     }
     
     updateCamera() {
+        // 缩放后的逻辑视口尺寸
+        const vw = this.width / this.cameraZoom;
+        const vh = this.height / this.cameraZoom;
         // 平滑跟随玩家
-        const targetX = this.player.x - this.width / 2;
-        const targetY = this.player.y - this.height / 2;
+        const targetX = this.player.x - vw / 2;
+        const targetY = this.player.y - vh / 2;
         
         this.camera.x = Utils.lerp(this.camera.x, targetX, 0.1);
         this.camera.y = Utils.lerp(this.camera.y, targetY, 0.1);
         
         // 边界限制
-        const maxCamX = Math.max(0, this.world.width - this.width);
-        const maxCamY = Math.max(0, this.world.height - this.height);
+        const maxCamX = Math.max(0, this.world.width - vw);
+        const maxCamY = Math.max(0, this.world.height - vh);
         this.camera.x = Utils.clamp(this.camera.x, 0, maxCamX);
         this.camera.y = Utils.clamp(this.camera.y, 0, maxCamY);
     }
@@ -698,6 +712,11 @@ class Game {
         
         // 应用相机变换
         this.ctx.save();
+        
+        // 手机端缩放
+        if (this.cameraZoom !== 1) {
+            this.ctx.scale(this.cameraZoom, this.cameraZoom);
+        }
         
         // 屏幕震动
         const shake = Utils.screenShake.getOffset();
@@ -749,17 +768,18 @@ class Game {
         
         const lightSources = this.world.getLightSources(this.player);
         for (const light of lightSources) {
-            const sx = light.x - this.camera.x;
-            const sy = light.y - this.camera.y;
+            const sx = (light.x - this.camera.x) * this.cameraZoom;
+            const sy = (light.y - this.camera.y) * this.cameraZoom;
             
-            const gradient = dctx.createRadialGradient(sx, sy, 0, sx, sy, light.radius);
+            const sr = light.radius * this.cameraZoom;
+            const gradient = dctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
             gradient.addColorStop(0, `rgba(0, 0, 0, ${light.intensity})`);
             gradient.addColorStop(0.6, `rgba(0, 0, 0, ${light.intensity * 0.4})`);
             gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
             
             dctx.fillStyle = gradient;
             dctx.beginPath();
-            dctx.arc(sx, sy, light.radius, 0, Math.PI * 2);
+            dctx.arc(sx, sy, sr, 0, Math.PI * 2);
             dctx.fill();
         }
         

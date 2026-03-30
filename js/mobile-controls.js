@@ -129,7 +129,7 @@ class MobileControls {
     }
 
     _applyThumb(cx, cy) {
-        const MAX = 42;
+        const MAX = 33;
         const DZ  = 8;
         let dx = cx - this._origin.x;
         let dy = cy - this._origin.y;

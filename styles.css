@@ -1781,7 +1781,7 @@ body {
     animation: collageDrop 0.34s cubic-bezier(0.22,1,0.36,1) forwards;
 }
 .collage-char.sandblowing {
-    animation: collageSandBlow 0.9s cubic-bezier(0.25, 0, 0.6, 1) forwards;
+    animation: collageSandBlow 0.45s cubic-bezier(0.25, 0, 0.6, 1) forwards;
 }
 
 /* "按任意键继续" 提示 */
@@ -2124,12 +2124,52 @@ body {
     .credits       { bottom: 6px; font-size: 10px; }
     .lore-figure   { width: 130px; height: 82px; margin: -6px auto 6px; }
 
-    #stats-panel   { gap: 5px; top: 6px; left: 8px; }
-    .stat-bar      { width: 80px; height: 6px; }
-    .stat-label    { font-size: 11px; }
+    /* ── 状态栏极度紧凑 ── */
+    #stats-panel   { gap: 3px; top: 4px; left: 6px; }
+    .stat-item     { padding: 3px 8px; gap: 5px; min-width: auto; border-radius: 14px; border-width: 1.5px; }
+    .stat-icon     { width: 16px; height: 16px; }
+    .stat-bar      { width: 54px; height: 5px; border-radius: 3px; }
+    .stat-label    { font-size: 9px; min-width: 22px; }
 
-    #dialog-box    { bottom: 215px; padding: 10px 18px; max-width: 80vw; }
-    #dialog-text   { font-size: 14px; }
+    /* ── 任务面板缩小 ── */
+    #quest-tracker { width: 130px; top: 4px; right: 6px; padding: 4px 7px; font-size: 10px; border-radius: 7px; }
+    #quest-tracker:hover { width: 180px; }
+    .tracker-mini-label { font-size: 8px; width: 18px; }
+    #tracker-mini-time  { font-size: 8px; min-width: 18px; }
+    #quest-mini-pct     { font-size: 8px; min-width: 18px; }
+    #tracker-mini       { gap: 3px; }
+
+    /* ── 颜料槽缩小并上移避开操作杆 ── */
+    #pigment-panel { padding: 6px 12px; gap: 8px; bottom: 155px; border-width: 2px; border-radius: 18px; }
+    .pigment-slot  { width: 28px; height: 28px; border-width: 2px; }
+
+    /* ── 装备栏缩小并上移避开操作杆 ── */
+    #equip-panel   { bottom: 155px; left: 6px; padding: 4px 8px; min-width: auto; border-radius: 7px; }
+    .equip-label   { font-size: 9px; margin-bottom: 2px; letter-spacing: 1px; }
+    .equip-slot    { padding: 3px 6px; min-height: 22px; gap: 4px; }
+    .equip-icon    { width: 16px; height: 16px; }
+    .equip-name    { font-size: 10px; }
+    .equip-effect  { font-size: 8px; margin-top: 2px; min-height: 10px; }
+
+    /* ── 隐藏桌面端UI按钮（手机有操作杆上的包/调按钮，避免重复） ── */
+    .ui-btn        { display: none !important; }
+
+    /* ── 对话框上移避开操作区 ── */
+    #dialog-box    { bottom: auto; top: 6px; left: 50%; padding: 6px 14px; max-width: 52vw; border-width: 2px; border-radius: 8px; }
+    #dialog-text   { font-size: 11px; line-height: 1.4; }
+
+    /* ── 弹出面板适配 ── */
+    .parchment-panel { min-width: auto; max-width: 90vw; padding: 14px 16px; max-height: 85vh; }
+    .parchment-panel h2 { font-size: 22px; margin-bottom: 10px; padding-bottom: 6px; }
+    #inventory-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 8px; }
+    .inventory-slot { width: 42px; height: 42px; }
+    .inventory-slot .item-icon { width: 28px; height: 28px; }
+
+    .craft-panel   { min-width: auto; max-width: 92vw; }
+    #craft-body    { flex-direction: column; gap: 8px; }
+    #craft-inventory { flex: none; border-right: none; border-bottom: 1px solid rgba(196,163,90,0.3); padding-right: 0; padding-bottom: 8px; }
+    #craft-inv-grid { grid-template-columns: repeat(6, 38px); gap: 4px; }
+    .craft-inv-item { width: 38px; height: 38px; }
 }
 
 /* ── 手机虚拟操作杆 ────────────────────────── */
@@ -2138,11 +2178,11 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 200px;
+    height: 150px;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    padding: 0 18px 22px;
+    padding: 0 12px 10px;
     pointer-events: none;
     z-index: 600;
     user-select: none;
@@ -2163,8 +2203,8 @@ body {
 }
 
 #joystick-base {
-    width: 112px;
-    height: 112px;
+    width: 88px;
+    height: 88px;
     border-radius: 50%;
     background: rgba(18, 12, 6, 0.52);
     border: 2px solid rgba(180, 140, 55, 0.45);
@@ -2175,8 +2215,8 @@ body {
 }
 
 #joystick-thumb {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: radial-gradient(circle at 38% 35%, rgba(230,185,75,0.9), rgba(130,95,28,0.75));
     border: 2px solid rgba(210,165,55,0.8);
@@ -2219,14 +2259,14 @@ body {
     padding: 0;
     box-shadow: 0 2px 10px rgba(0,0,0,0.45);
     transition: background 0.08s, transform 0.08s, box-shadow 0.08s;
-    width: 62px;
-    height: 62px;
-    font-size: 15px;
+    width: 50px;
+    height: 50px;
+    font-size: 13px;
 }
 .mobile-action-btn.mobile-btn-sm {
-    width: 48px;
-    height: 48px;
-    font-size: 13px;
+    width: 38px;
+    height: 38px;
+    font-size: 11px;
 }
 .mobile-action-btn.mb-active,
 .mobile-action-btn:active {

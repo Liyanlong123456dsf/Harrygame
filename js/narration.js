@@ -339,19 +339,19 @@ class CollageOpening {
         this._stopAutoScroll();
         this._enableManualScroll();
 
-        // 等待1.8秒后自动开始褪色（用户可在此期间滚轮翻阅）
-        if (!this._skipFlag) await this._wait(1800);
+        // 等待0.9秒后自动开始褪色（用户可在此期间滚轮翻阅）
+        if (!this._skipFlag) await this._wait(900);
         this._disableManualScroll();
 
         // Phase 1: 褪色（所有字同步灰化）
         if (!this._skipFlag) await this._desaturatePhase();
-        // 褪色完成后等待1.8秒
-        if (!this._skipFlag) await this._wait(1800);
+        // 褪色完成后等待0.9秒
+        if (!this._skipFlag) await this._wait(900);
         // Phase 2: 沙粒吹散
         if (!this._skipFlag) await this._sandBlowPhase();
 
-        // 沙粒吹散结束后等0.6s，再显示继续提示
-        await this._wait(360);
+        // 沙粒吹散结束后等0.3s，再显示继续提示
+        await this._wait(180);
         this._waitingForContinue = true;
         this.onDone();
 
@@ -415,11 +415,11 @@ class CollageOpening {
         if (this._skipFlag) return;
 
         this._chars.forEach(el => {
-            el.style.transition = 'filter 1.3s ease';
+            el.style.transition = 'filter 0.65s ease';
             el.style.filter     = 'grayscale(1) brightness(0.5)';
         });
         // 等待过渡完成，每 80ms 检查一次 skipFlag
-        for (let i = 0; i < 30 && !this._skipFlag; i++) await this._wait(80);
+        for (let i = 0; i < 15 && !this._skipFlag; i++) await this._wait(55);
     }
 
     // ── Phase 2：沙粒吹散 ─────────────────────────────────────
@@ -437,7 +437,7 @@ class CollageOpening {
                 el.style.setProperty('--blow-y',   blowY   + 'px');
                 el.style.setProperty('--blow-rot', blowRot + 'deg');
 
-                const delay = r(4) * 660; // 0~660ms 随机错开
+                const delay = r(4) * 330; // 0~330ms 随机错开
                 if (delay > maxDelay) maxDelay = delay;
 
                 setTimeout(() => {
@@ -451,7 +451,7 @@ class CollageOpening {
                     el.classList.add('sandblowing');
                 }, delay);
             });
-            setTimeout(resolve, maxDelay + 570); // 比动画时长(540ms)多30ms余量
+            setTimeout(resolve, maxDelay + 285); // 比动画时长多余量（加速50%）
         });
     }
 
