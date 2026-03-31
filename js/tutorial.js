@@ -338,13 +338,22 @@ class TutorialSystem {
             x: px + 80,
             y: py,
             available: true,
+            collected: false,
+            interactable: true,
             isTutorial: true,
             radius: 15,
             glowTimer: 0,
+            update: function(dt, gameTime) {
+                this.glowTimer = (this.glowTimer || 0) + dt;
+            },
+            isPlayerNear: function(px, py, range) {
+                const dx = this.x - px;
+                const dy = this.y - py;
+                return Math.sqrt(dx * dx + dy * dy) < (range || 60);
+            },
             draw: function(ctx) {
-                if (!this.available) return;
-                this.glowTimer = (this.glowTimer || 0) + 0.05;
-                const glow = (Math.sin(this.glowTimer * 3) + 1) * 0.5;
+                if (this.collected) return;
+                const glow = (Math.sin((this.glowTimer || 0) * 3) + 1) * 0.5;
                 ctx.save();
                 ctx.shadowColor = 'rgba(196,163,90,0.9)';
                 ctx.shadowBlur = 10 + glow * 8;
@@ -358,10 +367,11 @@ class TutorialSystem {
                 ctx.restore();
             },
             collect: function(player) {
-                if (!this.available) return null;
+                if (this.collected) return null;
+                this.collected = true;
                 this.available = false;
-                GameAudio.playCollect();
-                Particles.emitWatercolorSpread?.(this.x, this.y, '#8B7355') ||
+                this.interactable = false;
+                if (typeof GameAudio !== 'undefined') GameAudio.playCollect?.();
                 Particles.emit({ x: this.x, y: this.y, count: 8, color: '#8B7355', size: 4, life: 0.8, speed: 2 });
                 return {
                     id: 'rustyGear',
@@ -397,12 +407,23 @@ class TutorialSystem {
             x: px + 100,
             y: py,
             interactable: true,
+            collected: false,
             isTutorial: true,
+            glowTimer: 0,
+            update: function(dt, gameTime) {
+                this.glowTimer = (this.glowTimer || 0) + dt;
+            },
+            isPlayerNear: function(px, py, range) {
+                const dx = this.x - px;
+                const dy = this.y - py;
+                return Math.sqrt(dx * dx + dy * dy) < (range || 60);
+            },
             draw: function(ctx) {
+                const glow = (Math.sin((this.glowTimer || 0) * 2) + 1) * 0.5;
                 ctx.save();
                 ctx.shadowColor = 'rgba(196,163,90,0.8)';
-                ctx.shadowBlur = 15;
-                ctx.strokeStyle = 'rgba(196,163,90,0.9)';
+                ctx.shadowBlur = 12 + glow * 8;
+                ctx.strokeStyle = `rgba(196,163,90,${0.7 + glow * 0.3})`;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, 18, 0, Math.PI * 2);
