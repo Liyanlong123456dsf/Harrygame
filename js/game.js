@@ -1030,8 +1030,18 @@ class Game {
     }
     
     async _startNormalGame() {
-        // 创建游戏世界
-        this.world = new World(2400, 1800);
+        // 检测移动端缩放
+        const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        if (isMobile && window.innerHeight < 500) {
+            this.cameraZoom = 0.65;
+        }
+        
+        // 创建游戏世界（确保比视口大，适配4K等大屏幕）
+        const effectiveWidth = this.width / this.cameraZoom;
+        const effectiveHeight = this.height / this.cameraZoom;
+        const worldWidth = Math.max(effectiveWidth * 1.5, 2400);
+        const worldHeight = Math.max(effectiveHeight * 1.5, 1800);
+        this.world = new World(worldWidth, worldHeight);
         
         // 创建玩家
         this.player = new Player(200, this.world.height / 2);
@@ -1061,7 +1071,6 @@ class Game {
         this._showProgressUI();
         
         // 显示开场对话
-        const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
         setTimeout(() => {
             this.ui.showDialog('你来到了褪色界...在三日内修复古钟，才能回到人间。');
             setTimeout(() => {
@@ -1078,10 +1087,7 @@ class Game {
         
         this.gameStarted = true;
         this.lastTime = performance.now();
-        // 手机横屏：缩小镜头以扩大视野
-        if (isMobile && window.innerHeight < 500) {
-            this.cameraZoom = 0.65;
-        }
+        // 移动端控件显示
         if (this.mobileControls) this.mobileControls.show();
         if (screen.orientation && screen.orientation.lock) {
             screen.orientation.lock('landscape').catch(() => {});
