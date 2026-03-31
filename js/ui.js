@@ -899,6 +899,11 @@ class UI {
         for (const key in CraftedItems) {
             if (CraftedItems[key].id === itemId) return CraftedItems[key].color;
         }
+        if (typeof TutorialCraftedItems !== 'undefined') {
+            for (const key in TutorialCraftedItems) {
+                if (TutorialCraftedItems[key].id === itemId) return TutorialCraftedItems[key].color;
+            }
+        }
         return '#888';
     }
 
@@ -908,6 +913,11 @@ class UI {
         }
         for (const key in CraftedItems) {
             if (CraftedItems[key].id === itemId) return CraftedItems[key].name;
+        }
+        if (typeof TutorialCraftedItems !== 'undefined') {
+            for (const key in TutorialCraftedItems) {
+                if (TutorialCraftedItems[key].id === itemId) return TutorialCraftedItems[key].name;
+            }
         }
         return itemId;
     }

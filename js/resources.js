@@ -669,6 +669,14 @@ class Inventory {
                     }
                 }
             }
+            if (!itemData && typeof TutorialCraftedItems !== 'undefined') {
+                for (const key in TutorialCraftedItems) {
+                    if (TutorialCraftedItems[key].id === id) {
+                        itemData = TutorialCraftedItems[key];
+                        break;
+                    }
+                }
+            }
             
             if (itemData) {
                 result.push({
