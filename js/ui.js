@@ -249,7 +249,7 @@ class UI {
         const world = this.game.world;
         const dayNames = ['第一日', '第二日', '第三日'];
 
-        this.elements.dayDisplay.textContent = dayNames[world.day - 1] || `第${world.day}日`;
+        this.elements.dayDisplay.textContent = (world.day >= 1 && dayNames[world.day - 1]) ? dayNames[world.day - 1] : (world.day === 0 ? '序章' : `第${world.day}日`);
         const period = world.getCurrentPeriod();
         this.elements.timeDisplay.textContent = Utils.getTimePeriodName(period);
 
@@ -670,10 +670,12 @@ class UI {
             return;
         }
 
-        // 遍历所有配方，看是否完全匹配
+        // 遍历所有配方，看是否完全匹配（含教程配方）
+        const allRecipes = Object.assign({}, CraftedItems,
+            (typeof TutorialCraftedItems !== 'undefined' && this.game.isTutorialMode) ? TutorialCraftedItems : {});
         let matched = null;
-        for (const key in CraftedItems) {
-            const recipe = CraftedItems[key];
+        for (const key in allRecipes) {
+            const recipe = allRecipes[key];
             const needs = {};
             recipe.recipe.forEach(r => { needs[r.item] = r.count; });
 
@@ -709,8 +711,10 @@ class UI {
 
     _findPartialMatch(contents) {
         const keys = Object.keys(contents);
-        for (const rKey in CraftedItems) {
-            const recipe = CraftedItems[rKey];
+        const allR = Object.assign({}, CraftedItems,
+            (typeof TutorialCraftedItems !== 'undefined' && this.game.isTutorialMode) ? TutorialCraftedItems : {});
+        for (const rKey in allR) {
+            const recipe = allR[rKey];
             const needs = {};
             recipe.recipe.forEach(r => { needs[r.item] = r.count; });
 
@@ -805,7 +809,8 @@ class UI {
     // — 配方列表（仅展示参考） —
 
     refreshRecipes() {
-        const recipes = Object.values(CraftedItems);
+        const extra = (typeof TutorialCraftedItems !== 'undefined' && this.game.isTutorialMode) ? Object.values(TutorialCraftedItems) : [];
+        const recipes = [...Object.values(CraftedItems), ...extra];
         this.elements.recipesList.innerHTML = '<h3>配方参考</h3>';
         
         // 按类别分组

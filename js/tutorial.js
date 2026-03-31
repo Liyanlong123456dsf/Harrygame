@@ -140,7 +140,7 @@ class TutorialSystem {
         }
         
         // 播放完成音效
-        GameAudio.playCollect();
+        if (typeof GameAudio !== 'undefined') GameAudio.playCollect?.();
         
         // 显示完成粒子
         if (this.game.player) {
@@ -489,17 +489,21 @@ class TutorialSystem {
         localStorage.setItem('shiseji_tutorial_done', '1');
         this.game.isTutorialMode = false;
         
-        // 重新创建正常大小的世界
+        // 重新创建正常大小的世界（构造函数已调用generateWorld+generateResources，无需重复调用）
         this.game.world = new World(2400, 1800);
         this.game.world.day = 1;
         this.game.world.gameTime = 360; // 早晨6点
         this.game.world.isTutorial = false;
-        this.game.world.generateWorld();
-        this.game.world.generateResources();
         
         // 重置玩家位置
         this.game.player.x = 200;
         this.game.player.y = this.game.world.height / 2;
+        
+        // 重置相机跟随新玩家位置
+        const vw = this.game.width / this.game.cameraZoom;
+        const vh = this.game.height / this.game.cameraZoom;
+        this.game.camera.x = Math.max(0, this.game.player.x - vw / 2);
+        this.game.camera.y = Math.max(0, this.game.player.y - vh / 2);
         
         // 清除教程物品
         this.game.player.inventory.clear();

@@ -121,9 +121,13 @@ class Player {
             }
         }
         
-        // 检查死亡
+        // 检查死亡（教程模式下不触发死亡）
         if (this.stats.color <= 0) {
-            return 'death';
+            if (window.game && window.game.isTutorialMode) {
+                this.stats.color = 1;
+            } else {
+                return 'death';
+            }
         }
         
         return null;
