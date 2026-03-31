@@ -170,13 +170,12 @@ class CollageOpening {
     _startScroll() {
         this._scrollActive = true;
         const H = this.overlay.clientHeight;
-        // 手机横屏：首行出现在屏幕45%处，不启动匀速滚动，改由段落触发式平滑滚动
-        this._scrollY = H * (this._isMobileL ? 0.45 : 0.52);
+        // 统一使用匀速滚动，手机端速度稍慢
+        this._scrollY = H * (this._isMobileL ? 0.50 : 0.52);
         this._scrollEl.style.top = this._scrollY + 'px';
 
-        if (this._isMobileL) return; // 手机上不用匀速滚动
-
-        const SPEED = 57; // px/s
+        // 手机端也启用匀速滚动，速度稍慢
+        const SPEED = this._isMobileL ? 38 : 57; // px/s
         let lastTs = performance.now();
         const tick = (now) => {
             if (!this._scrollActive) return;
@@ -371,18 +370,19 @@ class CollageOpening {
         return new Promise(resolve => {
             if (this._skipFlag) { resolve(); return; }
             let i = 0;
-            const H = this._isMobileL ? this.overlay.clientHeight : 0;
+            const H = this.overlay.clientHeight;
             const run = () => {
                 if (this._skipFlag) { resolve(); return; }
                 if (i >= timeline.length) { resolve(); return; }
                 const entry = timeline[i++];
                 const el = this._chars[entry.idx];
-                // 手机：段落首字打字时，若不在屏幕内则平滑滚入
-                if (this._isMobileL && entry.isParaFirst && this._scrollEl) {
+                // 段落首字打字时，若不在屏幕内则平滑滚入
+                if (entry.isParaFirst && this._scrollEl) {
                     const ot = this.overlay.getBoundingClientRect().top;
                     const ct = el.getBoundingClientRect().top - ot;
-                    if (ct > H * 0.68 || ct < -10) {
-                        this._smoothScrollTo(this._scrollY - (ct - H * 0.35), 700);
+                    // 如果段落首字超出可视区域，平滑滚动到合适位置
+                    if (ct > H * 0.72 || ct < H * 0.12) {
+                        this._smoothScrollTo(this._scrollY - (ct - H * 0.4), 600);
                     }
                 }
                 el.classList.add('dropping');
