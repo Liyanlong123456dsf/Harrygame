@@ -16,7 +16,13 @@ class IntroAnimation {
         this._typewriterText = '';       // 当前正在打字的原文
         this._typewriterRevealed = 0;   // 已显示的字符数
         this._typewriterTimer = 0;      // 打字计时器
-        this._typewriterSpeed = 0.10;   // 每个字符间隔(秒)
+        this._typewriterSpeed = 0.06;   // 每个字符间隔(秒) - 加快打字速度
+        
+        // 连续滚动文字系统
+        this._textQueue = [];            // 文字段落队列 [{text, y, alpha, revealed, timer}]
+        this._scrollSpeed = 28;          // 滚动速度(像素/秒)
+        this._textSpacing = 80;          // 段落间距
+        this._lastTextBottom = 0;        // 最后一段文字底部位置
     }
 
     // ── 公共入口：返回 Promise，动画结束后 resolve ─────
@@ -30,6 +36,11 @@ class IntroAnimation {
             this._interacted = false;
             this._scene2ClickBound = false;
             this._tAfterInteract   = 0;
+            
+            // 重置滚动文字队列
+            this._textQueue = [];
+            this._lastTextBottom = 0;
+            this._queuedTexts = new Set(); // 防止重复添加
 
             this._resize();
             window.addEventListener('resize', this._onResize = () => this._resize());
@@ -117,8 +128,136 @@ class IntroAnimation {
                 return;
             }
         }
+        
+        // 更新并渲染滚动文字队列
+        this._updateScrollingText(dt);
+        this._renderScrollingText(ctx, W, H);
 
         this._raf = requestAnimationFrame(ts2 => this._loop(ts2));
+    }
+    
+    // ── 滚动文字队列系统 ──────────────────────────────
+    
+    _addScrollingText(text, fontSize = 20, color = 'rgba(244,228,188,0.9)') {
+        // 防止重复添加相同文本
+        if (this._queuedTexts.has(text)) return;
+        this._queuedTexts.add(text);
+        
+        const H = this.canvas.height;
+        // 新文字从屏幕下方进入
+        const startY = Math.max(this._lastTextBottom + this._textSpacing, H * 0.75);
+        
+        this._textQueue.push({
+            text,
+            fontSize,
+            color,
+            y: startY,
+            alpha: 0,           // 从透明开始渐入
+            revealed: 0,        // 打字机已显示字符数
+            timer: 0,           // 打字计时器
+            height: 0           // 文字块高度（渲染时计算）
+        });
+    }
+    
+    _updateScrollingText(dt) {
+        const H = this.canvas.height;
+        const fadeInZone = H * 0.7;   // 低于此位置开始渐入
+        const fadeOutZone = H * 0.15; // 高于此位置开始渐出
+        
+        for (let i = this._textQueue.length - 1; i >= 0; i--) {
+            const item = this._textQueue[i];
+            
+            // 向上滚动
+            item.y -= this._scrollSpeed * dt;
+            
+            // 打字机效果
+            item.timer += dt;
+            const plainText = item.text.replace(/\n/g, '');
+            item.revealed = Math.min(
+                Math.floor(item.timer / this._typewriterSpeed),
+                plainText.length
+            );
+            
+            // 渐入渐出
+            if (item.y > fadeInZone) {
+                // 从下方进入，渐入
+                item.alpha = Math.min(item.alpha + dt * 2.5, 1);
+            } else if (item.y < fadeOutZone) {
+                // 滚出顶部，渐出
+                item.alpha = Math.max(item.alpha - dt * 1.5, 0);
+            } else {
+                // 中间区域保持可见
+                item.alpha = Math.min(item.alpha + dt * 3, 1);
+            }
+            
+            // 移除完全消失的文字
+            if (item.y < -100 || (item.alpha <= 0 && item.y < fadeOutZone)) {
+                this._textQueue.splice(i, 1);
+            }
+        }
+        
+        // 更新最后文字底部位置
+        if (this._textQueue.length > 0) {
+            const last = this._textQueue[this._textQueue.length - 1];
+            this._lastTextBottom = last.y + (last.height || 60);
+        }
+    }
+    
+    _renderScrollingText(ctx, W, H) {
+        const isMobileL = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        const baseScale = (isMobileL && W < 900) ? 0.55 : 1.0;
+        const maxLineW = W * 0.88;
+        
+        for (const item of this._textQueue) {
+            if (item.alpha <= 0.01) continue;
+            
+            const bigSize = Math.round(item.fontSize * 3 * baseScale);
+            ctx.save();
+            ctx.globalAlpha = item.alpha;
+            ctx.font = `${bigSize}px 'Ma Shan Zheng', serif`;
+            ctx.fillStyle = item.color;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 14;
+            
+            // 换行处理
+            const rawLines = item.text.split('\n');
+            const lines = [];
+            rawLines.forEach(line => {
+                if (ctx.measureText(line).width <= maxLineW) {
+                    lines.push(line);
+                } else {
+                    let cur = '';
+                    for (const ch of line) {
+                        const test = cur + ch;
+                        if (ctx.measureText(test).width > maxLineW && cur.length > 0) {
+                            lines.push(cur);
+                            cur = ch;
+                        } else {
+                            cur = test;
+                        }
+                    }
+                    if (cur) lines.push(cur);
+                }
+            });
+            
+            const lineH = bigSize * 1.5;
+            const textX = W * 0.95;
+            let charsLeft = item.revealed;
+            
+            lines.forEach((line, idx) => {
+                if (charsLeft <= 0) return;
+                const show = line.substring(0, charsLeft);
+                charsLeft -= line.length;
+                ctx.fillText(show, textX, item.y + idx * lineH);
+            });
+            
+            // 记录文字块高度
+            item.height = lines.length * lineH;
+            
+            ctx.restore();
+        }
     }
 
     // ════════════════════════════════════════════════════
@@ -149,9 +288,10 @@ class IntroAnimation {
         this._drawTowerSilhouette(ctx, W, H, 0.9);
         ctx.restore();
 
-        // 文字：「钟停了。」渐入
-        const textAlpha = Math.max(0, Math.min((t - 1.2) / 1.0, 1));
-        this._drawCaption(ctx, W, H, '钟停了。', textAlpha, H * 0.26);
+        // 文字：「钟停了。」- 添加到滚动队列
+        if (t > 1.2) {
+            this._addScrollingText('钟停了。', 22);
+        }
 
         return t >= DUR;
     }
@@ -215,11 +355,10 @@ class IntroAnimation {
             ctx.restore();
         }
 
-        // 文字
-        const textAlpha = Math.min(t / 1.0, 1) * Math.max(0, 1 - (t - 3.0) / 0.8);
-        this._drawCaption(ctx, W, H,
-            '赭石、靛蓝、金箔——\n从钟面上剥落，在尘埃里枯死。',
-            textAlpha, H * 0.22, 18);
+        // 文字 - 添加到滚动队列
+        if (t > 0.5) {
+            this._addScrollingText('赭石、靛蓝、金箔——\n从钟面上剥落，在尘埃里枯死。', 18);
+        }
 
         return t >= DUR;
     }
@@ -253,9 +392,9 @@ class IntroAnimation {
             this._drawClock(ctx, cx, clockY, clockR, 0.5);
             this._drawCrack(ctx, cx, clockY, clockR, crackAlpha);
 
-            // 提示脉冲
+            // 提示脉冲（保留直接绘制，因为这是交互提示）
             const pulseAlpha = 0.4 + 0.4 * Math.sin(t * 3);
-            this._drawCaption(ctx, W, H, '点击触碰那道裂缝', pulseAlpha, H * 0.20, 32);
+            this._drawHintText(ctx, W, H, '点击触碰那道裂缝', pulseAlpha);
 
             if (!this._scene2ClickBound) {
                 this._scene2ClickBound = true;
@@ -293,10 +432,10 @@ class IntroAnimation {
             const handAlpha = Math.min(lt / 0.8, 1) * Math.max(0, 1 - (lt - 2.0) / 0.8);
             this._drawHand(ctx, cx, clockY, clockR, handAlpha, lt);
 
-            const textAlpha = Math.max(0, 1 - (lt - 1.8) / 0.7);
-            this._drawCaption(ctx, W, H,
-                '裂缝里渗出光来——\n光缠住他的手腕，袖口的颜色正在褪去。',
-                Math.min(lt / 0.8, 1) * textAlpha, H * 0.20, 16);
+            // 文字 - 添加到滚动队列
+            if (lt > 0.3) {
+                this._addScrollingText('裂缝里渗出光来——\n光缠住他的手腕，袖口的颜色正在褰去。', 16);
+            }
 
             if (lt >= DUR_AFTER) return true;
         }
@@ -381,10 +520,10 @@ class IntroAnimation {
             ctx.restore();
         }
 
-        // 文字
-        const textAlpha = Math.max(0, Math.min((t - 0.5) / 0.8, 1)) * Math.max(0, 1 - (t - 2.8) / 0.5);
-        this._drawCaption(ctx, W, H,
-            '他被吸了进去。', textAlpha, H * 0.12, 22);
+        // 文字 - 添加到滚动队列
+        if (t > 0.5) {
+            this._addScrollingText('他被吸了进去。', 22);
+        }
 
         // 最后闪白
         if (t > 2.8) {
@@ -513,12 +652,9 @@ class IntroAnimation {
             ctx.restore();
         }
 
-        // 文字：「你来到了褪色界」
-        const txt1Alpha = Math.max(0, Math.min((t - 1.0) / 1.0, 1)) * Math.max(0, 1 - (t - 4.0) / 0.8);
-        if (txt1Alpha > 0) {
-            this._drawCaption(ctx, W, H,
-                '最后一眼，是满树铅粉的石榴。\n然后，他跌入了褪色界。',
-                txt1Alpha, H * 0.30, 18, 'rgba(55,35,80,0.9)');
+        // 文字 - 添加到滚动队列（深色文字适配浅色背景）
+        if (t > 1.0) {
+            this._addScrollingText('最后一眼，是满树铅粉的石榴。\n然后，他跌入了褪色界。', 18, 'rgba(55,35,80,0.9)');
         }
 
         // 最终整体淡黑
@@ -534,6 +670,21 @@ class IntroAnimation {
     // ════════════════════════════════════════════════════
     // 辅助绘制方法
     // ════════════════════════════════════════════════════
+    
+    // 交互提示文字（固定位置，不参与滚动）
+    _drawHintText(ctx, W, H, text, alpha) {
+        if (alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.font = `48px 'Ma Shan Zheng', serif`;
+        ctx.fillStyle = 'rgba(244,228,188,0.9)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 10;
+        ctx.fillText(text, W * 0.5, H * 0.85);
+        ctx.restore();
+    }
 
     _drawStars(ctx, W, H, alpha, seed) {
         if (alpha <= 0) return;
