@@ -46,6 +46,7 @@ class Game {
         this._isDebugTutorial = false;
         this._debugSaveBackup = null;   // 内存备份，不写 localStorage
         this._activeIntro     = null;   // Task 5：序言实例引用
+        this._rafRunning      = false;  // 防止 gameLoop 重复启动
         
         // 存档系统
         this.saveKey = 'shiseji_save';
@@ -449,6 +450,11 @@ class Game {
         this._debugSaveBackup = localStorage.getItem(this.saveKey);
         this._isDebugTutorial = true;
 
+        // 如果序言正在播放，必须先中断它，否则 startGame() 的 await 永不解除阻塞
+        if (this._activeIntro) {
+            this._activeIntro.stop();
+        }
+
         // 重置教程状态
         if (this._autoSaveTimer) { clearInterval(this._autoSaveTimer); this._autoSaveTimer = null; }
         this.isTutorialMode = true;
@@ -504,6 +510,13 @@ class Game {
         window.addEventListener('beforeunload', this._debugBeforeUnload);
 
         this.ui?.showDialog('[DEBUG] 序章调试模式已启动，存档已备份');
+
+        // 启动游戏循环（_enterDebugTutorial 可能在 startGame()的 async 流程外被调用，
+        // 序言阶段游戏循环尚未启动）
+        if (!this._rafRunning) {
+            this._rafRunning = true;
+            requestAnimationFrame((ts) => this.gameLoop(ts));
+        }
     }
 
     _exitDebugTutorial() {
@@ -1052,6 +1065,9 @@ class Game {
             this._activeIntro = null;
         }
 
+        // 调试序章模式已在序言播放期间启动：直接返回，防止覆盖调试教程状态
+        if (this._isDebugTutorial) return;
+
         // 检查是否需要教程（首次游戏）
         const hasPlayedBefore = localStorage.getItem('shiseji_tutorial_done');
         
@@ -1206,6 +1222,7 @@ class Game {
     }
     
     gameLoop(currentTime) {
+        this._rafRunning = true;
         if (this.gameEnded) return;
         
         const rawDt = Math.min((currentTime - this.lastTime) / 1000, 0.1);
