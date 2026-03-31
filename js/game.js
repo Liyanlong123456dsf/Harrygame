@@ -1486,22 +1486,29 @@ class Game {
         if (this.isTutorialMode && this.world.tutorialClock) {
             const clock = this.world.tutorialClock;
             const distToClock = this.player.distanceTo(clock.x, clock.y);
-            if (distToClock < 60 && this.player.inventory.hasItem('tutorialOil')) {
-                this.player.inventory.removeItem('tutorialOil', 1);
-                this.tutorial?.notifyClockInteracted();
-                Particles.emit({
-                    x: clock.x,
-                    y: clock.y,
-                    count: 15,
-                    color: '#FFD700',
-                    size: 4,
-                    life: 1.5,
-                    speed: 3
-                });
-                GameAudio.playCollect();
+            if (distToClock < 60) {
+                if (this.player.inventory.hasItem('tutorialOil')) {
+                    this.player.inventory.removeItem('tutorialOil', 1);
+                    this.tutorial?.notifyClockInteracted();
+                    Particles.emit({
+                        x: clock.x,
+                        y: clock.y,
+                        count: 15,
+                        color: '#FFD700',
+                        size: 4,
+                        life: 1.5,
+                        speed: 3
+                    });
+                    GameAudio.playCollect();
+                } else {
+                    this.ui.showDialog('古钟在等待润滑油...先去合成吧（按C打开合成台）');
+                }
                 return;
             }
         }
+        
+        // 教程模式下禁止与正式钟塔交互，避免出现"寻找碎片"错误提示
+        if (this.isTutorialMode) return;
         
         // 检查钟塔交互
         const distToTower = this.player.distanceTo(

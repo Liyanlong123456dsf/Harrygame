@@ -2759,13 +2759,16 @@ body {
 .objective-text {
     font-family: 'Ma Shan Zheng', cursive;
     font-size: 1.3rem;
-    color: #E8D8A8;
+    color: #F0E4C0;
     margin-bottom: 0.3rem;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
 }
 .objective-hint {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 0.9rem;
-    color: #888;
+    font-size: 1.0rem;
+    color: #C8B070;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    letter-spacing: 0.05em;
 }
 
 .tutorial-key-hint {
