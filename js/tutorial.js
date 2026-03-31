@@ -404,6 +404,7 @@ class TutorialSystem {
         
         const px = this.game.player.x;
         const py = this.game.player.y;
+        const _game = this.game; // 闭包捕获，供 draw() 中做近距离检测
         
         this.tutorialClock = {
             type: 'tutorialClock',
@@ -422,15 +423,82 @@ class TutorialSystem {
                 return Math.sqrt(dx * dx + dy * dy) < (range || 60);
             },
             draw: function(ctx) {
-                const glow = (Math.sin((this.glowTimer || 0) * 2) + 1) * 0.5;
+                const t = this.glowTimer || 0;
+                const glow = (Math.sin(t * 2) + 1) * 0.5;
+                const pulse = (Math.sin(t * 1.5) + 1) * 0.5;
                 ctx.save();
-                ctx.shadowColor = 'rgba(196,163,90,0.8)';
-                ctx.shadowBlur = 12 + glow * 8;
-                ctx.strokeStyle = `rgba(196,163,90,${0.7 + glow * 0.3})`;
-                ctx.lineWidth = 2;
+
+                // 外圈脉动光晕（引导玩家注意）
+                ctx.shadowColor = 'rgba(196,163,90,0.9)';
+                ctx.shadowBlur = 20 + glow * 15;
+                const ringAlpha = 0.25 + pulse * 0.35;
+                ctx.strokeStyle = `rgba(196,163,90,${ringAlpha})`;
+                ctx.lineWidth = 3;
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, 18, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, 38 + pulse * 6, 0, Math.PI * 2);
                 ctx.stroke();
+
+                // 塔身（哥特小钟楼剪影）
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = '#3A2A50';
+                ctx.beginPath();
+                ctx.rect(this.x - 18, this.y - 48, 36, 60);
+                ctx.fill();
+
+                // 塔顶尖
+                ctx.fillStyle = '#4A3860';
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - 70);
+                ctx.lineTo(this.x - 18, this.y - 48);
+                ctx.lineTo(this.x + 18, this.y - 48);
+                ctx.closePath();
+                ctx.fill();
+
+                // 钟面（发光圆）
+                const faceAlpha = 0.55 + glow * 0.35;
+                ctx.fillStyle = `rgba(244,228,188,${faceAlpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y - 20, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 钟针
+                const handAngle = t * 0.8 - Math.PI / 2;
+                ctx.strokeStyle = '#1A1A2E';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - 20);
+                ctx.lineTo(this.x + Math.cos(handAngle) * 7, this.y - 20 + Math.sin(handAngle) * 7);
+                ctx.stroke();
+
+                // 向下指引箭头（悬浮在古钟正上方）
+                const arrowY = this.y - 82 + Math.sin(t * 2.5) * 4;
+                ctx.fillStyle = `rgba(196,163,90,${0.6 + pulse * 0.4})`;
+                ctx.beginPath();
+                ctx.moveTo(this.x, arrowY + 12);
+                ctx.lineTo(this.x - 8, arrowY);
+                ctx.lineTo(this.x + 8, arrowY);
+                ctx.closePath();
+                ctx.fill();
+
+                // 玩家靠近时显示世界坐标系 [E] 提示
+                const _player = _game && _game.player;
+                if (_player) {
+                    const _dx = this.x - _player.x;
+                    const _dy = this.y - _player.y;
+                    const _dist = Math.sqrt(_dx * _dx + _dy * _dy);
+                    if (_dist < 80) {
+                        const _alpha = Math.min(1, 1.2 - _dist / 80);
+                        ctx.fillStyle = `rgba(244,228,188,${_alpha})`;
+                        ctx.strokeStyle = `rgba(196,163,90,${_alpha * 0.8})`;
+                        ctx.lineWidth = 1;
+                        ctx.font = 'bold 13px "ZCOOL XiaoWei", monospace';
+                        ctx.textAlign = 'center';
+                        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                        ctx.shadowBlur = 4;
+                        ctx.fillText('[E]', this.x, this.y - 96);
+                    }
+                }
+
                 ctx.restore();
             }
         };

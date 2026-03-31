@@ -418,19 +418,28 @@ class World {
         // 绘制地面装饰
         this.drawGroundDetails(ctx);
         
-        // 绘制古钟碎片位置提示
-        this.drawClockPieceHints(ctx, player);
+        // 绘制古钟碎片位置提示（仅正式游戏）
+        if (!this.isTutorial) {
+            this.drawClockPieceHints(ctx, player);
+        }
         
         // 绘制资源节点
         for (const node of this.resourceNodes) {
             node.draw(ctx);
         }
         
+        // 绘制序章教程古钟（教程完成合成后出现）
+        if (this.isTutorial && this.tutorialClock && typeof this.tutorialClock.draw === 'function') {
+            this.tutorialClock.draw(ctx);
+        }
+        
         // 绘制生物
         this.creatures.draw(ctx);
         
-        // 绘制钟塔
-        this.drawClockTower(ctx, player);
+        // 绘制钟塔（仅正式游戏，教程中不显示以免误导）
+        if (!this.isTutorial) {
+            this.drawClockTower(ctx, player);
+        }
         
         // 绘制环境覆盖层
         this.drawEnvironmentOverlay(ctx, player);
