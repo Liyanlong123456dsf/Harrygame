@@ -16,14 +16,15 @@ class IntroAnimation {
         this._typewriterText = '';       // 当前正在打字的原文
         this._typewriterRevealed = 0;   // 已显示的字符数
         this._typewriterTimer = 0;      // 打字计时器
-        this._typewriterSpeed = 0.06;   // 每个字符间隔(秒) - 加快打字速度
+        this._typewriterSpeed = 0.08;   // 每个字符间隔(秒) - 适中速度便于阅读
         
-        // 连续滚动文字系统
-        this._textQueue = [];            // 文字段落队列 [{text, y, alpha, revealed, timer}]
-        this._scrollSpeed = 24;          // 稍慢一点，更舒缓
-        this._textSpacing = 80;          // 段落间距
-        this._lastTextBottom = 0;        // 最后一段文字底部位置
-        this._skipRequested = false;     // 跳过标志
+        // 固定字幕系统（不滚动，随场景切换）
+        this._textQueue = [];            // 文字段落队列
+        this._scrollSpeed = 0;           // 不滚动
+        this._textSpacing = 50;          // 段落间距
+        this._lastTextBottom = 0;
+        this._skipRequested = false;
+        this._currentSceneText = null;   // 当前场景文字
     }
 
     // ── 公共入口：返回 Promise，动画结束后 resolve ─────
@@ -141,10 +142,11 @@ class IntroAnimation {
         }
         
         if (advance) {
+            this._clearSceneText(); // 清除上一场景文字
             this._scene++;
             this._t = 0;
             this._interacted = false;
-            this._sceneTransition = 0.4; // 场景过渡时间
+            this._sceneTransition = 0.4;
             if (this._scene >= 5) {
                 this._end();
                 return;
@@ -176,31 +178,28 @@ class IntroAnimation {
         this._queuedTexts.add(text);
         
         const H = this.canvas.height;
-        // 新文字从屏幕下方进入
-        const startY = Math.max(this._lastTextBottom + this._textSpacing, H * 0.75);
+        const W = this.canvas.width;
+        const isLandscape = W > H;
+        
+        // 固定位置：横屏在右侧中央，竖屏在底部
+        const fixedY = isLandscape ? H * 0.4 : H * 0.72;
         
         this._textQueue.push({
             text,
             fontSize,
             color,
-            y: startY,
-            alpha: 0,           // 从透明开始渐入
-            revealed: 0,        // 打字机已显示字符数
-            timer: 0,           // 打字计时器
-            height: 0           // 文字块高度（渲染时计算）
+            y: fixedY,
+            alpha: 0,
+            revealed: 0,
+            timer: 0,
+            height: 0
         });
     }
     
     _updateScrollingText(dt) {
-        const H = this.canvas.height;
-        const fadeInZone = H * 0.7;   // 低于此位置开始渐入
-        const fadeOutZone = H * 0.15; // 高于此位置开始渐出
-        
+        // 固定位置字幕 - 不滚动，只做打字机和渐入渐出
         for (let i = this._textQueue.length - 1; i >= 0; i--) {
             const item = this._textQueue[i];
-            
-            // 向上滚动
-            item.y -= this._scrollSpeed * dt;
             
             // 打字机效果
             item.timer += dt;
@@ -210,29 +209,24 @@ class IntroAnimation {
                 plainText.length
             );
             
-            // 渐入渐出（⑨更柔和的渐入速率）
-            if (item.y > fadeInZone) {
-                // 从下方进入，渐入
-                item.alpha = Math.min(item.alpha + dt * 1.8, 1);
-            } else if (item.y < fadeOutZone) {
-                // 滚出顶部，渐出
-                item.alpha = Math.max(item.alpha - dt * 1.2, 0);
+            // 渐入效果
+            if (item.fadeOut) {
+                item.alpha = Math.max(item.alpha - dt * 2, 0);
+                if (item.alpha <= 0) {
+                    this._textQueue.splice(i, 1);
+                }
             } else {
-                // 中间区域保持可见
-                item.alpha = Math.min(item.alpha + dt * 2.5, 1);
-            }
-            
-            // 移除完全消失的文字
-            if (item.y < -100 || (item.alpha <= 0 && item.y < fadeOutZone)) {
-                this._textQueue.splice(i, 1);
+                item.alpha = Math.min(item.alpha + dt * 1.5, 1);
             }
         }
-        
-        // 更新最后文字底部位置
-        if (this._textQueue.length > 0) {
-            const last = this._textQueue[this._textQueue.length - 1];
-            this._lastTextBottom = last.y + (last.height || 60);
+    }
+    
+    // 清除当前场景文字（场景切换时调用）
+    _clearSceneText() {
+        for (const item of this._textQueue) {
+            item.fadeOut = true;
         }
+        this._queuedTexts.clear();
     }
     
     _renderScrollingText(ctx, W, H) {
@@ -270,14 +264,9 @@ class IntroAnimation {
         for (const item of this._textQueue) {
             if (item.alpha <= 0.01) continue;
             
-            const bigSize = Math.round(item.fontSize * 3 * baseScale);
+            const bigSize = Math.round(item.fontSize * 2.5 * baseScale);
             ctx.save();
-            ctx.globalAlpha = item.alpha;
             ctx.font = `${bigSize}px 'Ma Shan Zheng', serif`;
-            ctx.fillStyle = item.color;
-            ctx.textBaseline = 'top';
-            ctx.shadowColor = 'rgba(0,0,0,0.8)';
-            ctx.shadowBlur = 14;
             
             // 换行处理
             const rawLines = item.text.split('\n');
@@ -300,12 +289,31 @@ class IntroAnimation {
                 }
             });
             
-            const lineH = bigSize * 1.5;
-            // 文字居中显示在右侧区域
-            const textCenterX = textAreaX + (W - textAreaX) / 2;
-            ctx.textAlign = 'center';
-            let charsLeft = item.revealed;
+            const lineH = bigSize * 1.6;
+            const textCenterX = isLandscape ? textAreaX + (W - textAreaX) / 2 : W / 2;
+            const blockHeight = lines.length * lineH;
             
+            // 绘制半透明背景提升可读性
+            ctx.globalAlpha = item.alpha * 0.6;
+            ctx.fillStyle = 'rgba(10, 8, 20, 0.7)';
+            const bgPadding = 20;
+            const bgWidth = maxLineW + bgPadding * 2;
+            ctx.fillRect(
+                textCenterX - bgWidth / 2,
+                item.y - bgPadding,
+                bgWidth,
+                blockHeight + bgPadding * 2
+            );
+            
+            // 绘制文字
+            ctx.globalAlpha = item.alpha;
+            ctx.fillStyle = item.color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.shadowColor = 'rgba(0,0,0,0.9)';
+            ctx.shadowBlur = 8;
+            
+            let charsLeft = item.revealed;
             lines.forEach((line, idx) => {
                 if (charsLeft <= 0) return;
                 const show = line.substring(0, charsLeft);
@@ -313,9 +321,7 @@ class IntroAnimation {
                 ctx.fillText(show, textCenterX, item.y + idx * lineH);
             });
             
-            // 记录文字块高度
-            item.height = lines.length * lineH;
-            
+            item.height = blockHeight;
             ctx.restore();
         }
     }
