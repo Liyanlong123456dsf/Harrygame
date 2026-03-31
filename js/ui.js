@@ -74,7 +74,7 @@ class UI {
         // 关闭按钮
         document.querySelectorAll('.close-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.target.closest('.screen').classList.add('hidden');
+                e.target.closest('.screen')?.classList.add('hidden');
                 this.game.paused = false;
                 this.hideTooltip();
                 this._returnSlotsToInventory();

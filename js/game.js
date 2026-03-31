@@ -299,7 +299,7 @@ class Game {
                     }))
                 },
                 quest: this.quest ? {
-                    currentStage: this.quest.currentStage
+                    currentStage: this.quest.currentStageIndex
                 } : null
             };
             
@@ -385,11 +385,14 @@ class Game {
             // 创建UI
             this.ui = new UI(this);
             this.ui.show();
+
+            // 创建成就系统
+            this.achievements = new AchievementSystem(this);
             
             // 创建任务系统
             this.quest = new QuestSystem(this);
             if (saveData.quest) {
-                this.quest.currentStage = saveData.quest.currentStage;
+                this.quest.currentStageIndex = saveData.quest.currentStage;
             }
             
             // 开始游戏

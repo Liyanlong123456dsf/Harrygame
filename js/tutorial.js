@@ -492,8 +492,10 @@ class TutorialSystem {
         localStorage.setItem('shiseji_tutorial_done', '1');
         this.game.isTutorialMode = false;
         
-        // 重新创建正常大小的世界（构造函数已调用generateWorld+generateResources，无需重复调用）
-        this.game.world = new World(2400, 1800);
+        // 重新创建正常大小的世界（尺寸与 _startNormalGame 保持一致，兼容手机端缩放）
+        const _vw = this.game.width / this.game.cameraZoom;
+        const _vh = this.game.height / this.game.cameraZoom;
+        this.game.world = new World(Math.max(_vw * 1.5, 2400), Math.max(_vh * 1.5, 1800));
         this.game.world.day = 1;
         this.game.world.gameTime = 360; // 早晨6点
         this.game.world.isTutorial = false;

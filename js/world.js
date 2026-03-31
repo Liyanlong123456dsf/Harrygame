@@ -41,7 +41,7 @@ class World {
         this.erosionWaveActive = false;
         
         // 刷怪系统
-        this.spawnTimer = 0;       // 距离下次刷怪的倒计时（秒）
+        this.spawnTimer = 25;      // 首次刷怪延迟25秒，避免游戏开始瞬间大量刷怪
         this.spawnInterval = 25;   // 白昼刷怪间隔（秒）
         this.waveSize = 1;         // 每次刷多少只
         
@@ -127,6 +127,10 @@ class World {
             // 仅更新资源节点（用于教程采集）
             for (const node of this.resourceNodes) {
                 node.update(dt, this.gameTime);
+            }
+            // 更新教程古钟动画（glowTimer 需要每帧递增才有脉动光晕）
+            if (this.tutorialClock && typeof this.tutorialClock.update === 'function') {
+                this.tutorialClock.update(dt, this.gameTime);
             }
             return null;
         }
