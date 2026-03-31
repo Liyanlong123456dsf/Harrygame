@@ -106,9 +106,9 @@ class CollageOpening {
         const rot  = (r(2) - 0.5) * 6;
         const offX = (r(8) - 0.5) * 8;
 
-        // 颜色：重点字亮黄，普通字主要羊皮黄偶尔深棕
+        // 颜色：重点字亮黄+微光，普通字主要羊皮黄偶尔深棕
         const color = isKey
-            ? '#EDE0C4'
+            ? '#F5E8C8'  // ⑦更亮的重点字颜色
             : this._colors[Math.floor(r(3) * this._colors.length)];
 
         // 字体：重点字哥特装饰体，普通字中文字体
@@ -117,8 +117,10 @@ class CollageOpening {
             : this._fonts[Math.floor(r(4) * 2)];
 
         const bold = isKey ? 'bold' : (r(5) > 0.82 ? 'bold' : 'normal');
-        const shadowAlpha = isKey ? 0.55 : 0.22 + r(7) * 0.2;
-        return { fontSize, rot, offX, color, font, bold, shadowAlpha };
+        // ⑦重点字增强发光效果
+        const shadowAlpha = isKey ? 0.7 : 0.22 + r(7) * 0.2;
+        const glowEffect = isKey ? '0 0 12px rgba(245,232,200,0.4)' : '';
+        return { fontSize, rot, offX, color, font, bold, shadowAlpha, glowEffect };
     }
 
     // 构建分段DOM（inline-block流式布局 + 滚动容器）
@@ -150,13 +152,17 @@ class CollageOpening {
             const span = document.createElement('span');
             span.className = 'collage-char';
             span.textContent = ch;
+            // ⑦重点字增强发光效果
+            const shadowStyle = st.glowEffect 
+                ? `1px 2px 5px rgba(0,0,0,${st.shadowAlpha}), ${st.glowEffect}`
+                : `1px 2px 5px rgba(0,0,0,${st.shadowAlpha})`;
             span.style.cssText = [
                 `font-size:${st.fontSize}rem`,
                 `font-family:${st.font}`,
                 `font-weight:${st.bold}`,
                 `color:${st.color}`,
                 `--char-transform:rotate(${st.rot}deg) translateX(${st.offX}px)`,
-                `text-shadow:1px 2px 5px rgba(0,0,0,${st.shadowAlpha})`,
+                `text-shadow:${shadowStyle}`,
             ].join(';');
 
             currentPara.appendChild(span);
@@ -386,7 +392,9 @@ class CollageOpening {
                     }
                 }
                 el.classList.add('dropping');
-                if (entry.idx % 5 === 0 && typeof GameAudio !== 'undefined') {
+                // ⑧打字音效节奏：随机间隔3-6字
+                const soundInterval = 3 + Math.floor(this._rng(entry.idx * 17) * 4);
+                if (entry.idx % soundInterval === 0 && typeof GameAudio !== 'undefined') {
                     GameAudio.playNarrationTyping();
                 }
                 const next  = timeline[i];

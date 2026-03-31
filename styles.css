@@ -1849,10 +1849,15 @@ body {
     word-break: break-all;
 }
 
-/* 手机横屏：缩小段落间距，减少总内容高度，确保后段文字在打字时已入屏 */
+/* 手机横屏：优化段落间距，确保可读性 */
 @media (hover: none) and (orientation: landscape) {
-    .collage-para { margin-bottom: 0.8em; }
-    #collage-scroll { padding-bottom: 10vh; }
+    .collage-para { margin-bottom: 1.2em; }
+    #collage-scroll { padding-bottom: 12vh; }
+}
+/* 手机竖屏 */
+@media (hover: none) and (orientation: portrait) {
+    .collage-para { margin-bottom: 1.4em; }
+    #collage-scroll { padding-bottom: 15vh; }
 }
 
 /* 每个字符的剪报片段——inline-block 流式排布 */
@@ -1867,30 +1872,34 @@ body {
 
 /* 落入关键帧（适配 inline-block：用 --char-transform 叠加 translateY） */
 @keyframes collageDrop {
-    0%   { opacity: 0; transform: var(--char-transform) translateY(-22px) scale(1.18); }
-    62%  { opacity: 1; transform: var(--char-transform) translateY(3px)   scale(0.97); }
+    0%   { opacity: 0; transform: var(--char-transform) translateY(-28px) scale(1.15); filter: blur(2px); }
+    50%  { opacity: 0.85; transform: var(--char-transform) translateY(4px) scale(0.98); filter: blur(0); }
+    75%  { opacity: 1; transform: var(--char-transform) translateY(-2px) scale(1.01); }
     100% { opacity: 1; transform: var(--char-transform); }
 }
-/* 沙粒被风吹散消失 */
+/* 沙粒被风吹散消失（延长动画，更有“墨水晕开”感） */
 @keyframes collageSandBlow {
     0%   { opacity: 1;
            transform: var(--char-transform) translateX(0px) translateY(0px) rotate(0deg) scale(1);
            filter: grayscale(1) brightness(0.5); }
-    10%  { opacity: 0.92;
-           transform: var(--char-transform) translateX(0px) translateY(-3px) rotate(calc(var(--blow-rot) * 0.06)) scale(0.97);
-           filter: grayscale(1) brightness(0.5); }
+    15%  { opacity: 0.88;
+           transform: var(--char-transform) translateX(2px) translateY(-5px) rotate(calc(var(--blow-rot) * 0.08)) scale(0.95);
+           filter: grayscale(1) brightness(0.45) blur(1px); }
+    60%  { opacity: 0.3;
+           transform: var(--char-transform) translateX(calc(var(--blow-x) * 0.5)) translateY(calc(var(--blow-y) * 0.4)) rotate(calc(var(--blow-rot) * 0.5)) scale(0.4);
+           filter: grayscale(1) brightness(0.2) blur(3px); }
     100% { opacity: 0;
-           transform: var(--char-transform) translateX(var(--blow-x)) translateY(var(--blow-y)) rotate(var(--blow-rot)) scale(0.03);
-           filter: grayscale(1) brightness(0) blur(7px); }
+           transform: var(--char-transform) translateX(var(--blow-x)) translateY(var(--blow-y)) rotate(var(--blow-rot)) scale(0.02);
+           filter: grayscale(1) brightness(0) blur(8px); }
 }
 .collage-char.dropping {
-    animation: collageDrop 0.34s cubic-bezier(0.22,1,0.36,1) forwards;
+    animation: collageDrop 0.48s cubic-bezier(0.22,1,0.36,1) forwards;
 }
 .collage-char.sandblowing {
-    animation: collageSandBlow 0.45s cubic-bezier(0.25, 0, 0.6, 1) forwards;
+    animation: collageSandBlow 0.65s cubic-bezier(0.25, 0, 0.6, 1) forwards;
 }
 
-/* "按任意键继续" 提示 */
+/* "按任意键继续" 提示 - 增强动画效果 */
 .narration-prompt {
     margin-top: 3em;
     font-family: 'Ma Shan Zheng', cursive;
@@ -1900,13 +1909,14 @@ body {
     opacity: 0;
     pointer-events: all;
     cursor: pointer;
-    animation: narrationPulse 2.2s ease-in-out infinite;
+    text-shadow: 0 0 20px rgba(184,134,11,0.3);
+    animation: narrationPulse 2.4s ease-in-out infinite;
 }
 .narration-prompt.hidden { display: none; }
 
 @keyframes narrationPulse {
-    0%, 100% { opacity: 0.5; }
-    50%       { opacity: 1; }
+    0%, 100% { opacity: 0.45; transform: scale(1); text-shadow: 0 0 15px rgba(184,134,11,0.2); }
+    50%      { opacity: 1; transform: scale(1.02); text-shadow: 0 0 25px rgba(184,134,11,0.5); }
 }
 
 /* 跳过按钮 */
@@ -1927,6 +1937,44 @@ body {
 .narration-skip:hover {
     color: #B8860B;
     border-color: #B8860B;
+}
+/* 手机端跳过按钮移至顶部安全区域 */
+@media (hover: none) {
+    .narration-skip {
+        bottom: auto;
+        top: max(env(safe-area-inset-top, 16px), 16px);
+        right: max(env(safe-area-inset-right, 16px), 16px);
+        font-size: 0.9rem;
+        padding: 6px 16px;
+    }
+}
+
+/* IntroAnimation跳过按钮 */
+#intro-skip-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 36px;
+    background: transparent;
+    border: 1px solid rgba(244,228,188,0.35);
+    color: rgba(244,228,188,0.55);
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 0.9rem;
+    padding: 6px 18px;
+    cursor: pointer;
+    letter-spacing: 0.15em;
+    z-index: 1001;
+    transition: color 0.2s, border-color 0.2s, opacity 0.3s;
+}
+#intro-skip-btn:hover {
+    color: rgba(244,228,188,0.9);
+    border-color: rgba(244,228,188,0.7);
+}
+@media (hover: none) {
+    #intro-skip-btn {
+        bottom: auto;
+        top: max(env(safe-area-inset-top, 16px), 16px);
+        right: max(env(safe-area-inset-right, 16px), 16px);
+    }
 }
 
 /* ══════════════════════════════════════

@@ -20,9 +20,10 @@ class IntroAnimation {
         
         // 连续滚动文字系统
         this._textQueue = [];            // 文字段落队列 [{text, y, alpha, revealed, timer}]
-        this._scrollSpeed = 28;          // 滚动速度(像素/秒)
+        this._scrollSpeed = 24;          // 稍慢一点，更舒缓
         this._textSpacing = 80;          // 段落间距
         this._lastTextBottom = 0;        // 最后一段文字底部位置
+        this._skipRequested = false;     // 跳过标志
     }
 
     // ── 公共入口：返回 Promise，动画结束后 resolve ─────
@@ -46,6 +47,14 @@ class IntroAnimation {
             window.addEventListener('resize', this._onResize = () => this._resize());
 
             this.canvas.classList.remove('hidden');
+            
+            // 显示跳过按钮
+            this._skipBtn = document.getElementById('intro-skip-btn');
+            if (this._skipBtn) {
+                this._skipBtn.classList.remove('hidden');
+                this._skipHandler = () => { this._skipRequested = true; };
+                this._skipBtn.addEventListener('click', this._skipHandler);
+            }
 
             // 启动序言交互动画BGM（D小调，神秘/宿命）
             if (typeof GameAudio !== 'undefined' && GameAudio.initialized) {
@@ -66,6 +75,12 @@ class IntroAnimation {
     _end() {
         if (this._raf) { cancelAnimationFrame(this._raf); this._raf = null; }
         window.removeEventListener('resize', this._onResize);
+        
+        // 隐藏跳过按钮
+        if (this._skipBtn) {
+            this._skipBtn.classList.add('hidden');
+            this._skipBtn.removeEventListener('click', this._skipHandler);
+        }
 
         // 停止序言BGM
         if (typeof GameAudio !== 'undefined' && GameAudio.initialized) {
@@ -119,13 +134,30 @@ class IntroAnimation {
                 return;
         }
 
+        // 检查跳过请求
+        if (this._skipRequested) {
+            this._end();
+            return;
+        }
+        
         if (advance) {
             this._scene++;
             this._t = 0;
             this._interacted = false;
+            this._sceneTransition = 0.4; // 场景过渡时间
             if (this._scene >= 5) {
                 this._end();
                 return;
+            }
+        }
+        
+        // 场景过渡效果（淡入淡出）
+        if (this._sceneTransition > 0) {
+            this._sceneTransition -= dt;
+            const fadeAlpha = Math.min((0.4 - this._sceneTransition) / 0.2, 1) * 0.3;
+            if (fadeAlpha > 0) {
+                ctx.fillStyle = `rgba(5,3,18,${fadeAlpha})`;
+                ctx.fillRect(0, 0, W, H);
             }
         }
         
@@ -178,16 +210,16 @@ class IntroAnimation {
                 plainText.length
             );
             
-            // 渐入渐出
+            // 渐入渐出（⑨更柔和的渐入速率）
             if (item.y > fadeInZone) {
                 // 从下方进入，渐入
-                item.alpha = Math.min(item.alpha + dt * 2.5, 1);
+                item.alpha = Math.min(item.alpha + dt * 1.8, 1);
             } else if (item.y < fadeOutZone) {
                 // 滚出顶部，渐出
-                item.alpha = Math.max(item.alpha - dt * 1.5, 0);
+                item.alpha = Math.max(item.alpha - dt * 1.2, 0);
             } else {
                 // 中间区域保持可见
-                item.alpha = Math.min(item.alpha + dt * 3, 1);
+                item.alpha = Math.min(item.alpha + dt * 2.5, 1);
             }
             
             // 移除完全消失的文字
@@ -205,8 +237,31 @@ class IntroAnimation {
     
     _renderScrollingText(ctx, W, H) {
         const isMobileL = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-        const baseScale = (isMobileL && W < 900) ? 0.55 : 1.0;
+        const baseScale = (isMobileL && W < 900) ? 0.68 : 1.0; // ⑥手机端字号优化
         const maxLineW = W * 0.88;
+        
+        // ⑯左侧装饰线 - 卷轴展开的视觉引导
+        if (this._textQueue.length > 0) {
+            const lineX = W * 0.06;
+            const firstItem = this._textQueue[0];
+            const lastItem = this._textQueue[this._textQueue.length - 1];
+            const lineTop = Math.max(firstItem.y - 20, H * 0.1);
+            const lineBottom = Math.min(lastItem.y + (lastItem.height || 60), H * 0.9);
+            
+            if (lineBottom > lineTop) {
+                const lineGrad = ctx.createLinearGradient(0, lineTop, 0, lineBottom);
+                lineGrad.addColorStop(0, 'rgba(196,163,90,0)');
+                lineGrad.addColorStop(0.15, 'rgba(196,163,90,0.15)');
+                lineGrad.addColorStop(0.85, 'rgba(196,163,90,0.15)');
+                lineGrad.addColorStop(1, 'rgba(196,163,90,0)');
+                ctx.strokeStyle = lineGrad;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(lineX, lineTop);
+                ctx.lineTo(lineX, lineBottom);
+                ctx.stroke();
+            }
+        }
         
         for (const item of this._textQueue) {
             if (item.alpha <= 0.01) continue;
@@ -266,7 +321,7 @@ class IntroAnimation {
     // 时长约 3.5 秒
     // ════════════════════════════════════════════════════
     _scene0(ctx, W, H, t) {
-        const DUR = 3.5;
+        const DUR = 4.2; // 延长场景时长
 
         // 背景 —— 深紫黑渐变
         const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -276,11 +331,11 @@ class IntroAnimation {
         ctx.fillRect(0, 0, W, H);
 
         // 星点（慢慢出现）
-        const starAlpha = Math.min(t / 1.5, 1);
+        const starAlpha = Math.min(t / 2.0, 1);
         this._drawStars(ctx, W, H, starAlpha, 0);
 
-        // 钟楼从底部升起
-        const riseProgress = this._ease(Math.min(t / 2.2, 1));   // 0→1
+        // 钟楼从底部缓慢升起（⛪从2.2s→3.0s）
+        const riseProgress = this._ease(Math.min(t / 3.0, 1));   // 0→1
         const offsetY = (1 - riseProgress) * H * 0.35;
 
         ctx.save();
@@ -333,9 +388,14 @@ class IntroAnimation {
             const delay = prng() * 0.8;
             const localT = Math.max(0, t - delay);
 
+            // ⑫添加随机曲线偏移，更有"颜料剥落"的不规则感
+            const waveMag = (prng() - 0.5) * 15;
+            const waveFreq = 1.5 + prng() * 2;
+            const curveOffset = Math.sin(localT * waveFreq) * waveMag * localT * 0.3;
+            
             const dist  = clockR + localT * speed * H * 0.12;
-            const px    = cx + Math.cos(angle) * dist;
-            const py    = clockY + Math.sin(angle) * dist * 0.85;
+            const px    = cx + Math.cos(angle) * dist + curveOffset * Math.cos(angle + Math.PI/2);
+            const py    = clockY + Math.sin(angle) * dist * 0.85 + curveOffset * Math.sin(angle + Math.PI/2) * 0.6;
             const size  = (1.5 + prng() * 3) * (1 - localT / 3.5);
 
             if (size <= 0) continue;
@@ -674,15 +734,19 @@ class IntroAnimation {
     // 交互提示文字（固定位置，不参与滚动）
     _drawHintText(ctx, W, H, text, alpha) {
         if (alpha <= 0) return;
+        const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        const fontSize = isMobile ? 36 : 48;
+        const yPos = isMobile ? H * 0.72 : H * 0.78; // ⑬避免手机刘海遮挡
+        
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.font = `48px 'Ma Shan Zheng', serif`;
+        ctx.font = `${fontSize}px 'Ma Shan Zheng', serif`;
         ctx.fillStyle = 'rgba(244,228,188,0.9)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 10;
-        ctx.fillText(text, W * 0.5, H * 0.85);
+        ctx.shadowBlur = 12;
+        ctx.fillText(text, W * 0.5, yPos);
         ctx.restore();
     }
 
