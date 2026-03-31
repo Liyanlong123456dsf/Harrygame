@@ -889,6 +889,11 @@ class CreatureManager {
                 // 记录击杀
                 if (!(creature instanceof Chrysalis)) {
                     this.killCount = (this.killCount || 0) + 1;
+                    
+                    // 通知成就系统
+                    if (window.game && window.game.achievements) {
+                        window.game.achievements.onKill(creature.constructor.name);
+                    }
                 }
             }
             

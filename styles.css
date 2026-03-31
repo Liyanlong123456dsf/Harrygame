@@ -211,10 +211,48 @@ body {
 
 .title-container {
     text-align: center;
-    margin-bottom: 60px;
+    margin-bottom: 40px;
     animation: fadeInUp 1.5s ease-out;
     position: relative;
     z-index: 2;
+}
+
+/* 横屏/宽屏优化 */
+@media (max-height: 600px) and (orientation: landscape) {
+    .title-container {
+        margin-bottom: 20px;
+    }
+    .game-title {
+        font-size: 72px !important;
+        letter-spacing: 12px !important;
+        margin-bottom: 5px !important;
+    }
+    .game-subtitle {
+        font-size: 36px !important;
+        letter-spacing: 18px !important;
+    }
+    .tagline {
+        font-size: 16px !important;
+        margin-top: 15px !important;
+    }
+    .parchment-btn {
+        font-size: 18px !important;
+        padding: 12px 36px !important;
+        margin: 6px 0 !important;
+    }
+    .guide-toggle {
+        padding: 8px 24px !important;
+        font-size: 14px !important;
+    }
+    .credits {
+        bottom: 10px !important;
+        font-size: 12px !important;
+    }
+    .lore-figure {
+        width: 160px !important;
+        height: 100px !important;
+        margin: -10px auto 8px !important;
+    }
 }
 
 /* 线稿人物 */
@@ -322,6 +360,7 @@ body {
     font-family: 'ZCOOL XiaoWei', serif;
     font-size: 24px;
     padding: 18px 50px;
+    margin: 8px 0;
     background: linear-gradient(180deg, var(--parchment) 0%, var(--parchment-dark) 100%);
     border: 3px solid var(--ochre);
     border-radius: 5px;
@@ -2448,4 +2487,598 @@ body {
     background:
         radial-gradient(ellipse 300px 200px at 15% 80%, rgba(80,20,100,0.12) 0%, transparent 70%),
         radial-gradient(ellipse 200px 300px at 85% 20%, rgba(100,40,10,0.08) 0%, transparent 70%);
+}
+
+/* ══════════════════════════════════════
+   暂停菜单
+══════════════════════════════════════ */
+#pause-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(10, 8, 20, 0.85);
+    backdrop-filter: blur(4px);
+}
+.pause-panel {
+    background: linear-gradient(145deg, rgba(35,30,45,0.95), rgba(20,18,28,0.98));
+    border: 1px solid rgba(184,134,11,0.3);
+    border-radius: 8px;
+    padding: 2rem 3rem;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6), inset 0 0 30px rgba(184,134,11,0.05);
+}
+.pause-panel h2 {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 2rem;
+    color: #B8A878;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.2em;
+}
+.pause-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+.pause-btn {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.1rem;
+    padding: 0.7rem 2rem;
+    background: rgba(40,35,50,0.8);
+    border: 1px solid rgba(184,134,11,0.35);
+    color: #C8B888;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.1em;
+}
+.pause-btn:hover {
+    background: rgba(60,50,70,0.9);
+    border-color: rgba(184,134,11,0.6);
+    color: #E8D8A8;
+    transform: translateY(-1px);
+}
+.pause-btn-danger {
+    color: #A87070;
+    border-color: rgba(168,112,112,0.35);
+}
+.pause-btn-danger:hover {
+    color: #C89090;
+    border-color: rgba(168,112,112,0.6);
+}
+
+/* ══════════════════════════════════════
+   设置面板
+══════════════════════════════════════ */
+#settings-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 510;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(10, 8, 20, 0.9);
+}
+.settings-box {
+    background: linear-gradient(145deg, rgba(35,30,45,0.95), rgba(20,18,28,0.98));
+    border: 1px solid rgba(184,134,11,0.3);
+    border-radius: 8px;
+    padding: 2rem 2.5rem;
+    min-width: 320px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6);
+}
+.settings-box h2 {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.8rem;
+    color: #B8A878;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    letter-spacing: 0.2em;
+}
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.settings-label {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1rem;
+    color: #A89878;
+    min-width: 60px;
+}
+.settings-slider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(60,50,70,0.6);
+    border-radius: 3px;
+    outline: none;
+}
+.settings-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #C8A860, #8A6830);
+    border: 2px solid rgba(184,134,11,0.6);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.settings-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #C8A860, #8A6830);
+    border: 2px solid rgba(184,134,11,0.6);
+    cursor: pointer;
+}
+.settings-value {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 0.9rem;
+    color: #888;
+    min-width: 40px;
+    text-align: right;
+}
+.settings-box .pause-btn {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+/* ══════════════════════════════════════
+   攻击范围指示器
+══════════════════════════════════════ */
+.attack-range-indicator {
+    position: absolute;
+    pointer-events: none;
+    border: 2px dashed rgba(200, 80, 80, 0.4);
+    border-radius: 50%;
+    animation: attackRangePulse 0.8s ease-out forwards;
+}
+@keyframes attackRangePulse {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    50% { transform: scale(1); opacity: 0.3; }
+    100% { transform: scale(1.1); opacity: 0; }
+}
+
+/* ══════════════════════════════════════
+   序日教程系统
+══════════════════════════════════════ */
+.tutorial-chapter-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    background: rgba(10, 8, 15, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: tutorialFadeIn 1s ease-out;
+}
+.tutorial-chapter-overlay.fade-out {
+    animation: tutorialFadeOut 1s ease-out forwards;
+}
+.tutorial-chapter-text {
+    text-align: center;
+    color: #B8A878;
+    font-family: 'Ma Shan Zheng', cursive;
+}
+.tutorial-chapter-text .chapter-label {
+    display: block;
+    font-size: 1.2rem;
+    letter-spacing: 0.3em;
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+}
+.tutorial-chapter-text .chapter-title {
+    display: block;
+    font-size: 2.5rem;
+    letter-spacing: 0.2em;
+    animation: tutorialTextGlow 2s ease-in-out infinite;
+}
+@keyframes tutorialFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes tutorialFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+@keyframes tutorialTextGlow {
+    0%, 100% { text-shadow: 0 0 10px rgba(184, 168, 120, 0.3); }
+    50% { text-shadow: 0 0 20px rgba(184, 168, 120, 0.6); }
+}
+
+.tutorial-narration {
+    position: fixed;
+    bottom: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.4rem;
+    color: #C8B888;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    z-index: 550;
+    text-align: center;
+    max-width: 80%;
+}
+.tutorial-narration.show {
+    opacity: 1;
+}
+.tutorial-narration.hidden {
+    opacity: 0;
+}
+
+.tutorial-objective {
+    position: fixed;
+    top: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20, 18, 25, 0.9);
+    border: 1px solid rgba(184, 134, 11, 0.3);
+    border-radius: 8px;
+    padding: 1rem 2rem;
+    z-index: 540;
+    text-align: center;
+}
+.tutorial-objective.hidden {
+    display: none;
+}
+.objective-text {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.3rem;
+    color: #E8D8A8;
+    margin-bottom: 0.3rem;
+}
+.objective-hint {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.tutorial-key-hint {
+    position: fixed;
+    bottom: 25%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(184, 134, 11, 0.2);
+    border: 2px solid rgba(184, 134, 11, 0.6);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-family: monospace;
+    font-size: 1.2rem;
+    color: #E8D8A8;
+    animation: keyHintPulse 1.5s ease-in-out infinite;
+    z-index: 545;
+}
+@keyframes keyHintPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(184, 134, 11, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(184, 134, 11, 0.6); }
+}
+
+.tutorial-highlight {
+    animation: tutorialHighlight 1.5s ease-in-out infinite !important;
+    box-shadow: 0 0 15px rgba(200, 168, 96, 0.6) !important;
+}
+@keyframes tutorialHighlight {
+    0%, 100% { box-shadow: 0 0 10px rgba(200, 168, 96, 0.4); }
+    50% { box-shadow: 0 0 25px rgba(200, 168, 96, 0.8); }
+}
+
+/* 过渡动画 */
+.tutorial-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 700;
+    background: rgba(15, 12, 20, 0);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 1s ease;
+}
+.tutorial-transition-overlay.cracking {
+    background: rgba(15, 12, 20, 0.3);
+}
+.tutorial-transition-overlay.cracking .transition-cracks {
+    opacity: 1;
+}
+.transition-cracks {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: 
+        linear-gradient(45deg, transparent 48%, rgba(60, 50, 70, 0.5) 49%, rgba(60, 50, 70, 0.5) 51%, transparent 52%),
+        linear-gradient(-45deg, transparent 48%, rgba(60, 50, 70, 0.5) 49%, rgba(60, 50, 70, 0.5) 51%, transparent 52%);
+    background-size: 60px 60px;
+    animation: cracksSpread 2s ease-out forwards;
+}
+@keyframes cracksSpread {
+    from { background-size: 200px 200px; opacity: 0; }
+    to { background-size: 30px 30px; opacity: 1; }
+}
+.tutorial-transition-overlay.fading {
+    background: rgba(15, 12, 20, 0.85);
+}
+.tutorial-transition-overlay.fading .transition-cracks {
+    filter: grayscale(1);
+}
+.tutorial-transition-overlay.falling {
+    background: rgba(5, 3, 8, 0.98);
+}
+.transition-text {
+    text-align: center;
+    z-index: 1;
+}
+.fall-text {
+    display: block;
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.5rem;
+    color: #A89878;
+    opacity: 0;
+    animation: fallTextIn 1.5s ease-out 2.5s forwards;
+}
+.fall-text.delay {
+    animation-delay: 3.5s;
+}
+@keyframes fallTextIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.tutorial-transition-overlay.day-reveal {
+    background: rgba(5, 3, 8, 1);
+}
+.chapter-reveal {
+    text-align: center;
+}
+.day-label {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 3rem;
+    color: #C8A860;
+    letter-spacing: 0.3em;
+    animation: dayReveal 1.5s ease-out forwards;
+}
+@keyframes dayReveal {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* ══════════════════════════════════════
+   成就系统
+══════════════════════════════════════ */
+.achievement-popup {
+    position: fixed;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: linear-gradient(135deg, rgba(40, 35, 50, 0.95), rgba(25, 22, 32, 0.98));
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 560;
+    opacity: 0;
+    transition: all 0.5s ease;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+}
+.achievement-popup.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.achievement-popup.hide {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-30px);
+}
+.achievement-icon {
+    font-size: 2rem;
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+}
+.achievement-content {
+    text-align: left;
+}
+.achievement-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.2rem;
+    color: #FFD700;
+    margin-bottom: 0.2rem;
+}
+.achievement-desc {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 0.9rem;
+    color: #A89878;
+}
+
+/* 连击文字 */
+.streak-text {
+    position: fixed;
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.8rem;
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+    pointer-events: none;
+    z-index: 555;
+    opacity: 0;
+    transform: translateY(0) scale(0.8);
+    transition: all 0.3s ease;
+}
+.streak-text.show {
+    opacity: 1;
+    transform: translateY(-20px) scale(1);
+}
+.streak-text.fade {
+    opacity: 0;
+    transform: translateY(-40px) scale(1.1);
+}
+
+/* 幸运闪烁 */
+.lucky-flash {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 550;
+    opacity: 0;
+    box-shadow: inset 0 0 100px rgba(255, 215, 0, 0.3);
+    transition: opacity 0.3s ease;
+}
+.lucky-flash.show {
+    opacity: 1;
+    animation: luckyFlash 0.6s ease-out forwards;
+}
+@keyframes luckyFlash {
+    0% { box-shadow: inset 0 0 100px rgba(255, 215, 0, 0.5); }
+    100% { box-shadow: inset 0 0 50px rgba(255, 215, 0, 0); opacity: 0; }
+}
+
+/* ══════════════════════════════════════
+   进度可视化 - 钟面进度环
+══════════════════════════════════════ */
+#clock-progress {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 60px;
+    height: 60px;
+    z-index: 100;
+    pointer-events: none;
+}
+.clock-ring {
+    fill: none;
+    stroke: rgba(100, 90, 80, 0.3);
+    stroke-width: 3;
+}
+.clock-progress-ring {
+    fill: none;
+    stroke: #C8A860;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset 0.5s ease;
+}
+.clock-piece {
+    fill: rgba(80, 70, 60, 0.5);
+    transition: fill 0.5s ease;
+}
+.clock-piece.found {
+    fill: #C8A860;
+    filter: drop-shadow(0 0 3px rgba(200, 168, 96, 0.6));
+}
+.clock-center {
+    fill: rgba(60, 50, 45, 0.8);
+}
+
+/* 三日进度条 */
+#day-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    z-index: 99;
+    display: flex;
+    background: rgba(30, 25, 35, 0.8);
+}
+.day-segment {
+    flex: 1;
+    height: 100%;
+    background: rgba(80, 70, 90, 0.3);
+    border-right: 1px solid rgba(60, 50, 70, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+.day-segment:last-child {
+    border-right: none;
+}
+.day-segment .day-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #8A7050, #C8A860);
+    transition: width 0.3s ease;
+}
+.day-segment.current .day-fill {
+    background: linear-gradient(90deg, #C8A860, #E8D8A8);
+}
+.day-segment.completed .day-fill {
+    width: 100%;
+    background: rgba(100, 90, 70, 0.6);
+}
+
+/* ══════════════════════════════════════
+   移动端/横屏适配 - 教程系统
+══════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+    .tutorial-chapter-overlay {
+        padding: 10px;
+    }
+    .tutorial-chapter-text .chapter-label {
+        font-size: 1rem;
+    }
+    .tutorial-chapter-text .chapter-title {
+        font-size: 1.8rem;
+    }
+    .tutorial-narration {
+        bottom: 8%;
+        font-size: 1.1rem;
+    }
+    .tutorial-objective {
+        top: 8%;
+        padding: 0.6rem 1.2rem;
+    }
+    .objective-text {
+        font-size: 1rem;
+    }
+    .objective-hint {
+        font-size: 0.75rem;
+    }
+    .tutorial-key-hint {
+        bottom: 18%;
+        font-size: 1rem;
+        padding: 0.3rem 0.8rem;
+    }
+    .achievement-popup {
+        top: 10%;
+        padding: 0.6rem 1rem;
+    }
+    .achievement-icon {
+        font-size: 1.5rem;
+    }
+    .achievement-title {
+        font-size: 1rem;
+    }
+    .achievement-desc {
+        font-size: 0.75rem;
+    }
+    .streak-text {
+        font-size: 1.4rem;
+    }
+    .fall-text {
+        font-size: 1.2rem;
+    }
+    .day-label {
+        font-size: 2rem;
+    }
+    #clock-progress {
+        width: 45px;
+        height: 45px;
+        top: 8px;
+        right: 8px;
+    }
+}
+
+/* 移动端触摸设备 */
+@media (pointer: coarse) {
+    .tutorial-key-hint {
+        display: none; /* 移动端不显示键盘提示 */
+    }
+    .tutorial-highlight {
+        box-shadow: 0 0 20px rgba(200, 168, 96, 0.8) !important;
+    }
 }

@@ -42,6 +42,22 @@ class Game {
             timeMultiplier: 1
         };
         
+        // 存档系统
+        this.saveKey = 'shiseji_save';
+        this.autoSaveInterval = 30000; // 30秒自动存档
+        this._autoSaveTimer = null;
+        
+        // 攻击范围指示器
+        this.showAttackRange = false;
+        this.attackRangeTimer = 0;
+        
+        // 教程系统
+        this.tutorial = null;
+        this.isTutorialMode = false;
+        
+        // 成就系统
+        this.achievements = null;
+        
         this.init();
     }
     
@@ -53,6 +69,12 @@ class Game {
         this.mobileControls = (typeof MobileControls !== 'undefined') ? new MobileControls(this) : null;
         
         this.startBtn.addEventListener('click', () => this.startGame());
+        
+        // 继续游戏按钮
+        this.continueBtn = document.getElementById('continue-btn');
+        if (this.continueBtn) {
+            this.continueBtn.addEventListener('click', () => this.continueGame());
+        }
         
         // 玩法说明面板
         const guideBtn = document.getElementById('guide-btn');
@@ -84,6 +106,11 @@ class Game {
                 this._initStartTextBg();
                 this._initClockTowerBg();
                 GameAudio.startStartScreenMusic();
+                
+                // 检查是否有存档，显示继续按钮
+                if (this.hasSaveData()) {
+                    this.continueBtn?.classList.remove('hidden');
+                }
             };
             enterOverlay.addEventListener('click', onEnter, { once: true });
         }
@@ -96,6 +123,344 @@ class Game {
 
         // 暴露到全局以供其他模块访问
         window.game = this;
+        
+        // 页面切换时自动存档
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.gameStarted && !this.gameEnded) {
+                this.saveGame();
+            }
+        });
+        
+        // 初始化暂停菜单
+        this._initPauseMenu();
+        
+        // 初始化设置面板
+        this._initSettingsPanel();
+    }
+    
+    _initPauseMenu() {
+        const pauseMenu = document.getElementById('pause-menu');
+        const resumeBtn = document.getElementById('pause-resume');
+        const saveBtn = document.getElementById('pause-save');
+        const settingsBtn = document.getElementById('pause-settings');
+        const quitBtn = document.getElementById('pause-quit');
+        
+        if (!pauseMenu) return;
+        
+        if (resumeBtn) {
+            resumeBtn.addEventListener('click', () => this.togglePause());
+        }
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                this.saveGame();
+                this.ui?.showDialog('游戏已存档', 1500);
+            });
+        }
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => {
+                document.getElementById('settings-panel')?.classList.remove('hidden');
+            });
+        }
+        if (quitBtn) {
+            quitBtn.addEventListener('click', () => {
+                if (confirm('确定要退出吗？未保存的进度将丢失。')) {
+                    this.saveGame();
+                    location.reload();
+                }
+            });
+        }
+    }
+    
+    _initSettingsPanel() {
+        const panel = document.getElementById('settings-panel');
+        const closeBtn = document.getElementById('settings-close');
+        const masterSlider = document.getElementById('vol-master');
+        const musicSlider = document.getElementById('vol-music');
+        const sfxSlider = document.getElementById('vol-sfx');
+        
+        if (!panel) return;
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => panel.classList.add('hidden'));
+        }
+        
+        // 从localStorage读取音量设置
+        const savedVol = localStorage.getItem('shiseji_volume');
+        if (savedVol) {
+            try {
+                const vol = JSON.parse(savedVol);
+                if (masterSlider) masterSlider.value = vol.master ?? 70;
+                if (musicSlider) musicSlider.value = vol.music ?? 50;
+                if (sfxSlider) sfxSlider.value = vol.sfx ?? 80;
+                if (GameAudio.initialized) {
+                    GameAudio.setVolume('master', (vol.master ?? 70) / 100);
+                    GameAudio.setVolume('music', (vol.music ?? 50) / 100);
+                    GameAudio.setVolume('sfx', (vol.sfx ?? 80) / 100);
+                }
+            } catch(e) {}
+        }
+        
+        const saveVolume = () => {
+            const vol = {
+                master: masterSlider?.value ?? 70,
+                music: musicSlider?.value ?? 50,
+                sfx: sfxSlider?.value ?? 80
+            };
+            localStorage.setItem('shiseji_volume', JSON.stringify(vol));
+        };
+        
+        const masterVal = document.getElementById('vol-master-val');
+        const musicVal = document.getElementById('vol-music-val');
+        const sfxVal = document.getElementById('vol-sfx-val');
+        
+        const updateValueDisplay = () => {
+            if (masterVal && masterSlider) masterVal.textContent = masterSlider.value + '%';
+            if (musicVal && musicSlider) musicVal.textContent = musicSlider.value + '%';
+            if (sfxVal && sfxSlider) sfxVal.textContent = sfxSlider.value + '%';
+        };
+        updateValueDisplay();
+        
+        if (masterSlider) {
+            masterSlider.addEventListener('input', () => {
+                GameAudio.setVolume('master', masterSlider.value / 100);
+                saveVolume();
+                updateValueDisplay();
+            });
+        }
+        if (musicSlider) {
+            musicSlider.addEventListener('input', () => {
+                GameAudio.setVolume('music', musicSlider.value / 100);
+                saveVolume();
+                updateValueDisplay();
+            });
+        }
+        if (sfxSlider) {
+            sfxSlider.addEventListener('input', () => {
+                GameAudio.setVolume('sfx', sfxSlider.value / 100);
+                saveVolume();
+                updateValueDisplay();
+            });
+        }
+    }
+    
+    togglePause() {
+        if (!this.gameStarted || this.gameEnded) return;
+        
+        this.paused = !this.paused;
+        const pauseMenu = document.getElementById('pause-menu');
+        
+        if (this.paused) {
+            pauseMenu?.classList.remove('hidden');
+            GameAudio.setVolume('master', GameAudio.volumes.master * 0.3);
+        } else {
+            pauseMenu?.classList.add('hidden');
+            document.getElementById('settings-panel')?.classList.add('hidden');
+            GameAudio.setVolume('master', GameAudio.volumes.master);
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // 存档系统
+    // ═══════════════════════════════════════════════════════════
+    
+    saveGame() {
+        if (!this.gameStarted || this.gameEnded || !this.player || !this.world) return false;
+        
+        try {
+            const saveData = {
+                version: 1,
+                timestamp: Date.now(),
+                player: {
+                    x: this.player.x,
+                    y: this.player.y,
+                    stats: { ...this.player.stats },
+                    pigments: { ...this.player.pigments },
+                    clockPieces: this.player.clockPieces,
+                    clockOilUsed: this.player.clockOilUsed,
+                    inventory: this.player.inventory.serialize(),
+                    equippedWeapon: this.player.equippedWeapon?.id || null,
+                    placedItems: this.player.placedItems.map(item => ({
+                        type: item.type,
+                        x: item.x,
+                        y: item.y,
+                        duration: item.duration
+                    }))
+                },
+                world: {
+                    gameTime: this.world.gameTime,
+                    day: this.world.day,
+                    clockPieces: this.world.clockPieces.map(p => ({ ...p })),
+                    resourceNodes: this.world.resourceNodes.map(n => ({
+                        type: n.type,
+                        x: n.x,
+                        y: n.y,
+                        available: n.available,
+                        respawnTimer: n.respawnTimer
+                    }))
+                },
+                quest: this.quest ? {
+                    currentStage: this.quest.currentStage
+                } : null
+            };
+            
+            localStorage.setItem(this.saveKey, JSON.stringify(saveData));
+            console.log('[存档] 游戏已保存');
+            return true;
+        } catch (e) {
+            console.warn('[存档] 保存失败:', e);
+            return false;
+        }
+    }
+    
+    loadGame() {
+        try {
+            const raw = localStorage.getItem(this.saveKey);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (e) {
+            console.warn('[存档] 读取失败:', e);
+            return null;
+        }
+    }
+    
+    hasSaveData() {
+        return !!localStorage.getItem(this.saveKey);
+    }
+    
+    deleteSaveData() {
+        localStorage.removeItem(this.saveKey);
+    }
+    
+    async loadAndResumeGame(saveData) {
+        if (!saveData) return false;
+        
+        try {
+            // 创建世界
+            this.world = new World(2400, 1800);
+            
+            // 恢复世界状态
+            this.world.gameTime = saveData.world.gameTime;
+            this.world.day = saveData.world.day;
+            this.world.clockPieces = saveData.world.clockPieces;
+            
+            // 恢复资源节点状态
+            if (saveData.world.resourceNodes) {
+                saveData.world.resourceNodes.forEach((saved, i) => {
+                    if (this.world.resourceNodes[i]) {
+                        this.world.resourceNodes[i].available = saved.available;
+                        this.world.resourceNodes[i].respawnTimer = saved.respawnTimer;
+                    }
+                });
+            }
+            
+            // 创建玩家
+            this.player = new Player(saveData.player.x, saveData.player.y);
+            
+            // 恢复玩家状态
+            this.player.stats = { ...saveData.player.stats };
+            this.player.pigments = { ...saveData.player.pigments };
+            this.player.clockPieces = saveData.player.clockPieces;
+            this.player.clockOilUsed = saveData.player.clockOilUsed;
+            
+            // 恢复背包
+            if (saveData.player.inventory) {
+                this.player.inventory.deserialize(saveData.player.inventory);
+            }
+            
+            // 恢复装备
+            if (saveData.player.equippedWeapon) {
+                const weaponKey = Object.keys(CraftedItems).find(k => 
+                    CraftedItems[k].id === saveData.player.equippedWeapon
+                );
+                if (weaponKey) {
+                    this.player.equippedWeapon = CraftedItems[weaponKey];
+                }
+            }
+            
+            // 恢复放置物品
+            if (saveData.player.placedItems) {
+                this.player.placedItems = saveData.player.placedItems;
+            }
+            
+            // 创建UI
+            this.ui = new UI(this);
+            this.ui.show();
+            
+            // 创建任务系统
+            this.quest = new QuestSystem(this);
+            if (saveData.quest) {
+                this.quest.currentStage = saveData.quest.currentStage;
+            }
+            
+            // 开始游戏
+            this.gameStarted = true;
+            this.lastTime = performance.now();
+            
+            const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+            if (isMobile && window.innerHeight < 500) {
+                this.cameraZoom = 0.65;
+            }
+            if (this.mobileControls) this.mobileControls.show();
+            
+            // 启动自动存档
+            this._startAutoSave();
+            
+            // 开始背景音乐
+            const period = this.world.getCurrentPeriod();
+            GameAudio.startBackgroundMusic(period);
+            
+            // 开始游戏循环
+            requestAnimationFrame((time) => this.gameLoop(time));
+            
+            this.ui.showDialog('存档已读取，继续你的旅途...', 2000);
+            
+            return true;
+        } catch (e) {
+            console.warn('[存档] 恢复失败:', e);
+            return false;
+        }
+    }
+    
+    _startAutoSave() {
+        if (this._autoSaveTimer) clearInterval(this._autoSaveTimer);
+        this._autoSaveTimer = setInterval(() => {
+            if (this.gameStarted && !this.gameEnded && !this.paused) {
+                this.saveGame();
+            }
+        }, this.autoSaveInterval);
+    }
+    
+    _stopAutoSave() {
+        if (this._autoSaveTimer) {
+            clearInterval(this._autoSaveTimer);
+            this._autoSaveTimer = null;
+        }
+    }
+    
+    async continueGame() {
+        const saveData = this.loadGame();
+        if (!saveData) {
+            this.ui?.showDialog('存档数据不存在', 1500);
+            return;
+        }
+        
+        // 初始化音频
+        await GameAudio.init();
+        
+        // 隐藏开始界面
+        this.startScreen.classList.add('hidden');
+        
+        // 停止开始界面音乐与文字背景
+        GameAudio.stopStartScreenMusic();
+        if (this._stopStartTextBg) this._stopStartTextBg();
+        if (this._stopClockTowerBg) this._stopClockTowerBg();
+        
+        // 加载存档
+        const success = await this.loadAndResumeGame(saveData);
+        if (!success) {
+            this.startScreen.classList.remove('hidden');
+            alert('存档加载失败，请开始新游戏');
+        }
     }
     
     _initStartTextBg() {
@@ -497,9 +862,17 @@ class Game {
                         this.attack();
                         break;
                     case 'escape':
-                        this.ui.elements.inventoryScreen.classList.add('hidden');
-                        this.ui.elements.craftScreen.classList.add('hidden');
-                        this.paused = false;
+                        // 如果有面板打开，先关闭面板
+                        const invOpen = !this.ui.elements.inventoryScreen.classList.contains('hidden');
+                        const craftOpen = !this.ui.elements.craftScreen.classList.contains('hidden');
+                        if (invOpen || craftOpen) {
+                            this.ui.elements.inventoryScreen.classList.add('hidden');
+                            this.ui.elements.craftScreen.classList.add('hidden');
+                            this.paused = false;
+                        } else {
+                            // 否则切换暂停菜单
+                            this.togglePause();
+                        }
                         break;
                     case '1':
                         this.player.usePigment('red');
@@ -577,11 +950,83 @@ class Game {
             await intro.play();
         }
 
+        // 检查是否需要教程（首次游戏）
+        const hasPlayedBefore = localStorage.getItem('shiseji_tutorial_done');
+        
+        if (!hasPlayedBefore && typeof TutorialSystem !== 'undefined') {
+            // 启动教程模式（序日）
+            await this._startTutorialMode();
+        } else {
+            // 正常游戏流程
+            await this._startNormalGame();
+        }
+    }
+    
+    async _startTutorialMode() {
+        this.isTutorialMode = true;
+        
+        // 创建教程世界（与画布大小适配，确保填满屏幕）
+        const tutorialWidth = Math.max(this.width, 1200);
+        const tutorialHeight = Math.max(this.height, 800);
+        this.world = new World(tutorialWidth, tutorialHeight);
+        this.world.day = 0;
+        this.world.isTutorial = true;
+        this.world.gameTime = 1020; // 黄昏17:00
+        this.world.generateWorld();  // 生成地形背景
+        // 教程不生成随机资源，由TutorialSystem控制
+        
+        // 创建玩家（居中）
+        this.player = new Player(tutorialWidth / 2, tutorialHeight / 2);
+        this.player.stats.color = 100;
+        this.player.stats.ink = 100;
+        this.player.stats.warmth = 100;
+        
+        // 初始化统计追踪
+        this.player.stats.totalCollected = 0;
+        this.player.stats.totalCrafted = 0;
+        this.player.stats.totalKills = 0;
+        this.player.stats.uniqueResources = new Set();
+        this.player.stats.minInkEver = 100;
+        
+        // 创建UI
+        this.ui = new UI(this);
+        this.ui.show();
+        
+        // 创建成就系统
+        this.achievements = new AchievementSystem(this);
+        
+        // 创建教程系统
+        this.tutorial = new TutorialSystem(this);
+        
+        // 开始游戏循环
+        this.gameStarted = true;
+        this.lastTime = performance.now();
+        
+        const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        if (isMobile && window.innerHeight < 500) {
+            this.cameraZoom = 0.65;
+        }
+        if (this.mobileControls) this.mobileControls.show();
+        
+        requestAnimationFrame((time) => this.gameLoop(time));
+        
+        // 启动教程
+        this.tutorial.start();
+    }
+    
+    async _startNormalGame() {
         // 创建游戏世界
         this.world = new World(2400, 1800);
         
         // 创建玩家
         this.player = new Player(200, this.world.height / 2);
+        
+        // 初始化统计追踪
+        this.player.stats.totalCollected = 0;
+        this.player.stats.totalCrafted = 0;
+        this.player.stats.totalKills = 0;
+        this.player.stats.uniqueResources = new Set();
+        this.player.stats.minInkEver = this.player.stats.ink;
         
         // 给玩家一些初始物资
         this.player.inventory.addItem('stardustGrass', 3);
@@ -591,8 +1036,14 @@ class Game {
         this.ui = new UI(this);
         this.ui.show();
         
+        // 创建成就系统
+        this.achievements = new AchievementSystem(this);
+        
         // 创建任务系统
         this.quest = new QuestSystem(this);
+        
+        // 显示进度可视化
+        this._showProgressUI();
         
         // 显示开场对话
         const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
@@ -620,6 +1071,12 @@ class Game {
         if (screen.orientation && screen.orientation.lock) {
             screen.orientation.lock('landscape').catch(() => {});
         }
+        
+        // 启动自动存档
+        this._startAutoSave();
+        
+        // 清除旧存档（新游戏）
+        this.deleteSaveData();
         
         // 开始游戏循环
         requestAnimationFrame((time) => this.gameLoop(time));
@@ -678,6 +1135,28 @@ class Game {
         
         // 更新背景音乐
         this.updateMusic();
+        
+        // 更新攻击范围指示器计时
+        if (this.attackRangeTimer > 0) {
+            this.attackRangeTimer -= dt;
+            if (this.attackRangeTimer <= 0) {
+                this.showAttackRange = false;
+            }
+        }
+        
+        // 更新教程系统
+        if (this.tutorial && this.tutorial.active) {
+            this.tutorial.update(dt);
+        }
+        
+        // 更新成就系统
+        if (this.achievements) {
+            this.achievements.update();
+            this.achievements.trackMinInk();
+        }
+        
+        // 更新进度可视化
+        this._updateProgressUI();
     }
     
     updateCamera() {
@@ -705,6 +1184,84 @@ class Game {
         }
     }
     
+    _showProgressUI() {
+        document.getElementById('day-progress')?.classList.remove('hidden');
+        document.getElementById('clock-progress')?.classList.remove('hidden');
+    }
+    
+    _updateProgressUI() {
+        if (!this.world || !this.player) return;
+        
+        // 更新三日进度条
+        const dayProgress = document.getElementById('day-progress');
+        if (dayProgress && this.world.day >= 1) {
+            const segments = dayProgress.querySelectorAll('.day-segment');
+            segments.forEach((seg, i) => {
+                const dayNum = i + 1;
+                const fill = seg.querySelector('.day-fill');
+                
+                seg.classList.remove('current', 'completed');
+                
+                if (dayNum < this.world.day) {
+                    seg.classList.add('completed');
+                    if (fill) fill.style.width = '100%';
+                } else if (dayNum === this.world.day) {
+                    seg.classList.add('current');
+                    // 计算当日进度 (0-1440分钟)
+                    const dayProgress = (this.world.gameTime % 1440) / 1440;
+                    if (fill) fill.style.width = `${dayProgress * 100}%`;
+                } else {
+                    if (fill) fill.style.width = '0%';
+                }
+            });
+        }
+        
+        // 更新钟面进度环
+        const clockProgress = document.getElementById('clock-progress');
+        if (clockProgress) {
+            const pieces = this.player.clockPieces || 0;
+            const total = 3;
+            
+            // 更新进度环
+            const ring = clockProgress.querySelector('.clock-progress-ring');
+            if (ring) {
+                const circumference = 163.36; // 2 * PI * 26
+                const offset = circumference * (1 - pieces / total);
+                ring.style.strokeDashoffset = offset;
+            }
+            
+            // 更新钟片
+            for (let i = 1; i <= 3; i++) {
+                const piece = clockProgress.querySelector(`.clock-piece[data-piece="${i}"]`);
+                if (piece) {
+                    if (i <= pieces) {
+                        piece.classList.add('found');
+                    } else {
+                        piece.classList.remove('found');
+                    }
+                }
+            }
+        }
+    }
+    
+    drawAttackRange() {
+        const attackRange = 50;
+        const alpha = this.attackRangeTimer / 0.3;
+        const scale = 0.8 + (1 - alpha) * 0.3;
+        
+        this.ctx.save();
+        this.ctx.globalAlpha = alpha * 0.4;
+        this.ctx.strokeStyle = 'rgba(200, 80, 80, 0.6)';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([5, 5]);
+        
+        this.ctx.beginPath();
+        this.ctx.arc(this.player.x, this.player.y, attackRange * scale, 0, Math.PI * 2);
+        this.ctx.stroke();
+        
+        this.ctx.restore();
+    }
+    
     render() {
         if (!this.world || !this.player) return;
         // 清空画布
@@ -727,6 +1284,11 @@ class Game {
         
         // 绘制玩家
         this.player.draw(this.ctx);
+        
+        // 绘制攻击范围指示器
+        if (this.showAttackRange && this.attackRangeTimer > 0) {
+            this.drawAttackRange();
+        }
         
         // 绘制粒子
         Particles.draw(this.ctx);
@@ -766,7 +1328,19 @@ class Game {
         // 在光源位置挖洞（仅影响离屏画布）
         dctx.globalCompositeOperation = 'destination-out';
         
-        const lightSources = this.world.getLightSources(this.player);
+        // 性能优化：限制光源数量，按距离排序，优先渲染近处光源
+        let lightSources = this.world.getLightSources(this.player);
+        const MAX_LIGHTS = 8;
+        if (lightSources.length > MAX_LIGHTS) {
+            // 按距离排序，保留最近的光源
+            lightSources.sort((a, b) => {
+                const distA = Math.hypot(a.x - this.player.x, a.y - this.player.y);
+                const distB = Math.hypot(b.x - this.player.x, b.y - this.player.y);
+                return distA - distB;
+            });
+            lightSources = lightSources.slice(0, MAX_LIGHTS);
+        }
+        
         for (const light of lightSources) {
             const sx = (light.x - this.camera.x) * this.cameraZoom;
             const sy = (light.y - this.camera.y) * this.cameraZoom;
@@ -843,8 +1417,27 @@ class Game {
         if (resource) {
             const collected = resource.collect(this.player);
             if (collected) {
-                this.player.inventory.addItem(collected.id, collected.count);
-                this.ui.showDialog(`获得了 ${collected.name}`, 1500);
+                // 成就系统：采集奖励
+                let bonusMultiplier = 1;
+                if (this.achievements) {
+                    const result = this.achievements.onCollect(collected.id);
+                    bonusMultiplier = result.bonus || 1;
+                }
+                
+                const finalCount = Math.ceil(collected.count * bonusMultiplier);
+                this.player.inventory.addItem(collected.id, finalCount);
+                
+                // 显示提示（含连击/幸运信息）
+                let msg = `获得了 ${collected.name}`;
+                if (bonusMultiplier > 1) {
+                    msg += bonusMultiplier >= 2 ? ' ×2!' : ` +${Math.round((bonusMultiplier - 1) * 100)}%`;
+                }
+                this.ui.showDialog(msg, 1500);
+                
+                // 教程系统通知
+                if (this.tutorial && this.tutorial.active) {
+                    // 教程不做额外处理
+                }
                 
                 // 对应颜色的彩实回复颜料
                 if (collected.id === 'colorFruitRed') {
@@ -866,6 +1459,27 @@ class Game {
             this.player.interact(creature);
             this.ui.showDialog('你轻触了鸣蛹，它的歌声更加悠扬了', 1500);
             return;
+        }
+        
+        // 教程模式：检查教程古钟交互
+        if (this.isTutorialMode && this.world.tutorialClock) {
+            const clock = this.world.tutorialClock;
+            const distToClock = this.player.distanceTo(clock.x, clock.y);
+            if (distToClock < 60 && this.player.inventory.hasItem('tutorialOil')) {
+                this.player.inventory.removeItem('tutorialOil', 1);
+                this.tutorial?.notifyClockInteracted();
+                Particles.emit({
+                    x: clock.x,
+                    y: clock.y,
+                    count: 15,
+                    color: '#FFD700',
+                    size: 4,
+                    life: 1.5,
+                    speed: 3
+                });
+                GameAudio.playCollect();
+                return;
+            }
         }
         
         // 检查钟塔交互
@@ -913,6 +1527,10 @@ class Game {
         );
         
         this.player.attack(creatures);
+        
+        // 显示攻击范围指示器
+        this.showAttackRange = true;
+        this.attackRangeTimer = 0.3;
         
         // 攻击特效
         const attackDir = this.player.facingRight ? 1 : -1;

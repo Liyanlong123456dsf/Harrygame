@@ -346,6 +346,11 @@ class UI {
             this.refreshInventory();
             screen.classList.remove('hidden');
             this.game.paused = true;
+            
+            // 通知教程系统
+            if (this.game.tutorial && this.game.tutorial.active) {
+                this.game.tutorial.notifyInventoryOpened();
+            }
         } else {
             screen.classList.add('hidden');
             this.game.paused = false;
@@ -761,6 +766,16 @@ class UI {
         // 通知任务系统
         if (this.game.quest) {
             this.game.quest.onCraftItem();
+        }
+        
+        // 通知教程系统
+        if (this.game.tutorial && this.game.tutorial.active) {
+            this.game.tutorial.notifyItemCrafted(recipe.id);
+        }
+        
+        // 通知成就系统
+        if (this.game.achievements) {
+            this.game.achievements.onCraft(recipe.id);
         }
 
         // 显示结果动画 + 闪光

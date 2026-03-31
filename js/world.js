@@ -11,6 +11,9 @@ class World {
         this.maxDays = 3;
         this.timeScale = 2; // 1秒现实时间 = 2分钟游戏时间
         
+        // 教程模式标记
+        this.isTutorial = false;
+        
         // 资源节点
         this.resourceNodes = [];
         
@@ -119,6 +122,15 @@ class World {
     }
     
     update(dt, player) {
+        // 教程模式：跳过大部分更新
+        if (this.isTutorial) {
+            // 仅更新资源节点（用于教程采集）
+            for (const node of this.resourceNodes) {
+                node.update(dt, this.gameTime);
+            }
+            return null;
+        }
+        
         // 更新时间
         this.updateTime(dt);
         

@@ -53,6 +53,26 @@ class AudioManager {
         }
     }
     
+    // 设置音量
+    setVolume(type, value) {
+        value = Math.max(0, Math.min(1, value));
+        this.volumes[type] = value;
+        
+        if (!this.initialized) return;
+        
+        switch (type) {
+            case 'master':
+                if (this.masterGain) this.masterGain.gain.value = value;
+                break;
+            case 'music':
+                if (this.musicGain) this.musicGain.gain.value = value;
+                break;
+            case 'sfx':
+                if (this.sfxGain) this.sfxGain.gain.value = value;
+                break;
+        }
+    }
+    
     // 播放八音盒音符
     playMusicBoxNote(frequency, duration = 0.3, delay = 0) {
         if (!this.initialized) return;

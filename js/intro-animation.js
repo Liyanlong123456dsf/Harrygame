@@ -237,12 +237,16 @@ class IntroAnimation {
     
     _renderScrollingText(ctx, W, H) {
         const isMobileL = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-        const baseScale = (isMobileL && W < 900) ? 0.68 : 1.0; // ⑥手机端字号优化
-        const maxLineW = W * 0.88;
+        const isLandscape = W > H;
+        const baseScale = (isMobileL && W < 900) ? 0.68 : 1.0;
         
-        // ⑯左侧装饰线 - 卷轴展开的视觉引导
+        // 横屏：文字在右侧；竖屏：文字在下方中央
+        const textAreaX = isLandscape ? W * 0.55 : W * 0.1;
+        const maxLineW = isLandscape ? W * 0.42 : W * 0.8;
+        
+        // 左侧装饰线
         if (this._textQueue.length > 0) {
-            const lineX = W * 0.06;
+            const lineX = textAreaX - 30;
             const firstItem = this._textQueue[0];
             const lastItem = this._textQueue[this._textQueue.length - 1];
             const lineTop = Math.max(firstItem.y - 20, H * 0.1);
@@ -271,7 +275,6 @@ class IntroAnimation {
             ctx.globalAlpha = item.alpha;
             ctx.font = `${bigSize}px 'Ma Shan Zheng', serif`;
             ctx.fillStyle = item.color;
-            ctx.textAlign = 'right';
             ctx.textBaseline = 'top';
             ctx.shadowColor = 'rgba(0,0,0,0.8)';
             ctx.shadowBlur = 14;
@@ -298,14 +301,16 @@ class IntroAnimation {
             });
             
             const lineH = bigSize * 1.5;
-            const textX = W * 0.95;
+            // 文字居中显示在右侧区域
+            const textCenterX = textAreaX + (W - textAreaX) / 2;
+            ctx.textAlign = 'center';
             let charsLeft = item.revealed;
             
             lines.forEach((line, idx) => {
                 if (charsLeft <= 0) return;
                 const show = line.substring(0, charsLeft);
                 charsLeft -= line.length;
-                ctx.fillText(show, textX, item.y + idx * lineH);
+                ctx.fillText(show, textCenterX, item.y + idx * lineH);
             });
             
             // 记录文字块高度

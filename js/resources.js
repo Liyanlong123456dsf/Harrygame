@@ -1,5 +1,34 @@
 // 资源系统 - 5种基础资源 + 合成配方
 
+// 教程专用资源
+const TutorialResources = {
+    RUSTY_GEAR: {
+        id: 'rustyGear',
+        name: '生锈齿轮',
+        description: '工坊里的老齿轮，还能转动',
+        color: '#8B7355',
+        glowColor: 'rgba(139, 115, 85, 0.3)',
+        isTutorial: true,
+        collectEffect: { color: 3 }
+    }
+};
+
+// 教程专用合成配方
+const TutorialCraftedItems = {
+    TUTORIAL_OIL: {
+        id: 'tutorialOil',
+        name: '润滑油',
+        description: '让齿轮重新转动',
+        color: '#A08050',
+        icon: '🛢️',
+        isTutorial: true,
+        recipe: [
+            { item: 'stardustGrass', count: 1 },
+            { item: 'morningDew', count: 1 }
+        ]
+    }
+};
+
 const ResourceTypes = {
     // 星尘草 - 黄昏草地采集
     STARDUST_GRASS: {
@@ -656,5 +685,26 @@ class Inventory {
     
     clear() {
         this.items.clear();
+    }
+    
+    // 序列化背包数据（用于存档）
+    serialize() {
+        const data = {};
+        this.items.forEach((count, id) => {
+            data[id] = count;
+        });
+        return data;
+    }
+    
+    // 反序列化背包数据（用于读档）
+    deserialize(data) {
+        this.items.clear();
+        if (data && typeof data === 'object') {
+            for (const id in data) {
+                if (data[id] > 0) {
+                    this.items.set(id, data[id]);
+                }
+            }
+        }
     }
 }

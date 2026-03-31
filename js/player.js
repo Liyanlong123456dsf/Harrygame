@@ -284,6 +284,11 @@ class Player {
             Particles.emitEmotionPigment(this.x, this.y, colors[color], 80);
             GameAudio.playCollect();
             
+            // 通知成就系统
+            if (window.game && window.game.achievements) {
+                window.game.achievements.onPigmentUsed(color);
+            }
+            
             return true;
         }
         return false;

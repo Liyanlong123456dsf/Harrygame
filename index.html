@@ -87,7 +87,8 @@
                 <p class="tagline">当颜色被吞噬，用最后一滴颜料，绘出归途</p>
             </div>
 
-            <button id="start-btn" class="parchment-btn">开始旅程</button>
+            <button id="continue-btn" class="parchment-btn hidden">继续旅程</button>
+            <button id="start-btn" class="parchment-btn">开始新旅程</button>
             <button id="guide-btn" class="parchment-btn guide-toggle">玩法说明</button>
             <div class="credits">手绘水彩 × 暗黑童话</div>
 
@@ -208,6 +209,27 @@
                             <li>三枚碎片全部修复后，古钟转动，归途开启！</li>
                         </ol>
                         <p class="guide-warn">⚠ 三日之内未能修复古钟，褪色界将彻底坍塌。</p>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 序日教程</h3>
+                        <p>首次进入游戏将进入<b>「钟匠的残梦」</b>教程关卡，在这里你将学习基本操作：</p>
+                        <ul class="guide-tips">
+                            <li><b>移动</b> — 使用WASD或虚拟摇杆移动</li>
+                            <li><b>采集</b> — 靠近资源按E拾取</li>
+                            <li><b>背包</b> — 按I查看已收集的物品</li>
+                            <li><b>合成</b> — 按C打开调色盘合成道具</li>
+                            <li><b>交互</b> — 靠近古钟按E使用物品</li>
+                        </ul>
+                        <p style="font-size:12px;opacity:0.7;margin-top:8px">教程约2-3分钟，完成后自动进入正式游戏。再次进入将跳过教程。</p>
+                    </section>
+
+                    <section class="guide-section">
+                        <h3>◈ 成就与奖励</h3>
+                        <div class="guide-stat"><b>连击奖励</b> — 连续采集3次以上可获得额外奖励加成（+10%/20%/30%...）</div>
+                        <div class="guide-stat"><b>幸运掉落</b> — 采集有5%几率双倍，击杀有10%几率掉落稀有资源</div>
+                        <div class="guide-stat"><b>里程碑</b> — 完成特定目标解锁成就，获得永久加成（采集速度、夜视等）</div>
+                        <p style="font-size:12px;opacity:0.7;margin-top:8px">成就弹窗会在解锁时短暂显示，不会打断游戏。</p>
                     </section>
 
                     <section class="guide-section">
@@ -432,6 +454,60 @@
                 <button id="restart-btn" class="parchment-btn">重新开始</button>
             </div>
         </div>
+
+        <!-- 暂停菜单 -->
+        <div id="pause-menu" class="screen hidden">
+            <div class="pause-panel">
+                <h2>— 暂停 —</h2>
+                <div class="pause-buttons">
+                    <button id="pause-resume" class="pause-btn">继续游戏</button>
+                    <button id="pause-save" class="pause-btn">保存进度</button>
+                    <button id="pause-settings" class="pause-btn">设置</button>
+                    <button id="pause-quit" class="pause-btn pause-btn-danger">返回主菜单</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 三日进度条 -->
+        <div id="day-progress" class="hidden">
+            <div class="day-segment" data-day="1"><div class="day-fill"></div></div>
+            <div class="day-segment" data-day="2"><div class="day-fill"></div></div>
+            <div class="day-segment" data-day="3"><div class="day-fill"></div></div>
+        </div>
+
+        <!-- 钟面进度环 -->
+        <svg id="clock-progress" class="hidden" viewBox="0 0 60 60">
+            <circle class="clock-ring" cx="30" cy="30" r="26"/>
+            <circle class="clock-progress-ring" cx="30" cy="30" r="26" 
+                    stroke-dasharray="163.36" stroke-dashoffset="163.36"/>
+            <path class="clock-piece" data-piece="1" d="M30,30 L30,8 A22,22 0 0,1 49,19 Z"/>
+            <path class="clock-piece" data-piece="2" d="M30,30 L49,19 A22,22 0 0,1 49,41 Z"/>
+            <path class="clock-piece" data-piece="3" d="M30,30 L49,41 A22,22 0 0,1 30,52 Z"/>
+            <circle class="clock-center" cx="30" cy="30" r="6"/>
+        </svg>
+
+        <!-- 设置面板 -->
+        <div id="settings-panel" class="screen hidden">
+            <div class="settings-box">
+                <h2>— 设置 —</h2>
+                <div class="settings-row">
+                    <span class="settings-label">主音量</span>
+                    <input type="range" id="vol-master" min="0" max="100" value="70" class="settings-slider">
+                    <span class="settings-value" id="vol-master-val">70%</span>
+                </div>
+                <div class="settings-row">
+                    <span class="settings-label">音乐</span>
+                    <input type="range" id="vol-music" min="0" max="100" value="50" class="settings-slider">
+                    <span class="settings-value" id="vol-music-val">50%</span>
+                </div>
+                <div class="settings-row">
+                    <span class="settings-label">音效</span>
+                    <input type="range" id="vol-sfx" min="0" max="100" value="80" class="settings-slider">
+                    <span class="settings-value" id="vol-sfx-val">80%</span>
+                </div>
+                <button id="settings-close" class="pause-btn">返回</button>
+            </div>
+        </div>
     </div>
 
     <!-- 竖屏提示（横屏游戏，竖屏时显示） -->
@@ -530,6 +606,8 @@
     <script src="js/ending-sequence.js"></script>
     <script src="js/death-ending-sequence.js"></script>
     <script src="js/mobile-controls.js"></script>
+    <script src="js/achievements.js"></script>
+    <script src="js/tutorial.js"></script>
     <script src="js/game.js"></script>
 </body>
 </html>
