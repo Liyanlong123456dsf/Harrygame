@@ -300,18 +300,50 @@ class TutorialSystem {
     }
     
     _createKeyHighlight(key) {
-        const existing = document.querySelector(`.tutorial-key-hint[data-key="${key}"]`);
-        if (existing) return;
+        if (document.querySelector(`.tutorial-key-hint[data-key="${key}"]`)) return;
         
-        const hint = document.createElement('div');
-        hint.className = 'tutorial-key-hint';
-        hint.dataset.key = key;
-        hint.textContent = key;
-        document.getElementById('game-container').appendChild(hint);
+        // 获取或创建组容器
+        let group = document.getElementById('tutorial-key-group');
+        if (!group) {
+            group = document.createElement('div');
+            group.id = 'tutorial-key-group';
+            group.className = 'tutorial-key-group';
+            document.getElementById('game-container').appendChild(group);
+        }
+        
+        const k = key.toUpperCase();
+        const span = document.createElement('span');
+        span.className = 'tutorial-key-hint';
+        span.dataset.key = key;
+        span.textContent = key;
+        
+        if (k === 'W') {
+            // W 独占上排（D-pad 顶部）
+            let topRow = group.querySelector('.key-row-top');
+            if (!topRow) {
+                topRow = document.createElement('div');
+                topRow.className = 'tutorial-key-row key-row-top';
+                group.insertBefore(topRow, group.firstChild);
+            }
+            topRow.appendChild(span);
+        } else if (k === 'A' || k === 'S' || k === 'D') {
+            // A S D 在下排横排（D-pad 中/下）
+            let botRow = group.querySelector('.key-row-bot');
+            if (!botRow) {
+                botRow = document.createElement('div');
+                botRow.className = 'tutorial-key-row key-row-bot';
+                group.appendChild(botRow);
+            }
+            botRow.appendChild(span);
+        } else {
+            // 单键（E / I / C）直接放入组
+            group.appendChild(span);
+        }
     }
     
     _removeHighlights() {
-        // 移除键盘提示
+        // 移除键盘提示组和个别提示
+        document.getElementById('tutorial-key-group')?.remove();
         document.querySelectorAll('.tutorial-key-hint').forEach(el => el.remove());
         
         // 移除按钮高亮
@@ -424,55 +456,75 @@ class TutorialSystem {
             },
             draw: function(ctx) {
                 const t = this.glowTimer || 0;
-                const glow = (Math.sin(t * 2) + 1) * 0.5;
-                const pulse = (Math.sin(t * 1.5) + 1) * 0.5;
+                const glow  = (Math.sin(t * 2.2) + 1) * 0.5;   // 0-1 循环
+                const pulse = (Math.sin(t * 1.4) + 1) * 0.5;
                 ctx.save();
 
-                // 外圈脉动光晕（引导玩家注意）
-                ctx.shadowColor = 'rgba(196,163,90,0.9)';
-                ctx.shadowBlur = 20 + glow * 15;
-                const ringAlpha = 0.25 + pulse * 0.35;
-                ctx.strokeStyle = `rgba(196,163,90,${ringAlpha})`;
-                ctx.lineWidth = 3;
+                // ─ 外圈脉动光环（等待修复状态，频率快于正式钟塔）
+                ctx.shadowColor = 'rgba(196,163,90,0.7)';
+                ctx.shadowBlur = 14 + glow * 12;
+                ctx.strokeStyle = `rgba(196,163,90,${0.20 + pulse * 0.30})`;
+                ctx.lineWidth = 2.5;
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, 38 + pulse * 6, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, 36 + pulse * 5, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // 塔身（哥特小钟楼剪影）
-                ctx.shadowBlur = 8;
-                ctx.fillStyle = '#3A2A50';
+                // ─ 塔身（与 drawClockTower 同色系，但更暗/褪色）
+                ctx.shadowBlur = 6;
+                const bodyGrad = ctx.createLinearGradient(this.x - 18, this.y - 48, this.x + 18, this.y + 12);
+                bodyGrad.addColorStop(0, '#4A3A2A');   // 同 drawClockTower 色系
+                bodyGrad.addColorStop(0.5, '#3A2A1A');
+                bodyGrad.addColorStop(1, '#2A1A0A');
+                ctx.fillStyle = bodyGrad;
                 ctx.beginPath();
-                ctx.rect(this.x - 18, this.y - 48, 36, 60);
+                ctx.rect(this.x - 16, this.y - 48, 32, 60);
                 ctx.fill();
 
-                // 塔顶尖
-                ctx.fillStyle = '#4A3860';
+                // ─ 塔顶尖（破损：填色比正式暗30%）
+                const topGrad = ctx.createLinearGradient(this.x, this.y - 68, this.x, this.y - 48);
+                topGrad.addColorStop(0, '#3A2A1A');
+                topGrad.addColorStop(1, '#4A3A2A');
+                ctx.fillStyle = topGrad;
                 ctx.beginPath();
-                ctx.moveTo(this.x, this.y - 70);
-                ctx.lineTo(this.x - 18, this.y - 48);
-                ctx.lineTo(this.x + 18, this.y - 48);
+                ctx.moveTo(this.x, this.y - 68);
+                ctx.lineTo(this.x - 16, this.y - 48);
+                ctx.lineTo(this.x + 16, this.y - 48);
                 ctx.closePath();
                 ctx.fill();
 
-                // 钟面（发光圆）
-                const faceAlpha = 0.55 + glow * 0.35;
+                // ─ 破损裂缝（与 creatures.js featherCracks 同风格）
+                ctx.strokeStyle = 'rgba(200,160,80,0.25)';
+                ctx.lineWidth = 0.8;
+                [[-8, -35, 0.8, 12], [5, -20, 2.1, 10], [-3, -10, 1.3, 8]].forEach(([cx, cy, angle, len]) => {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + cx, this.y + cy);
+                    ctx.lineTo(this.x + cx + Math.cos(angle) * len, this.y + cy + Math.sin(angle) * len);
+                    ctx.stroke();
+                });
+
+                // ─ 钟面（未修复：暗淡，glow较小）
+                const faceAlpha = 0.15 + glow * 0.20;   // 正式钟塔约0.5，此处更暗
                 ctx.fillStyle = `rgba(244,228,188,${faceAlpha})`;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y - 20, 10, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.strokeStyle = `rgba(139,115,85,${0.4 + glow * 0.3})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
 
-                // 钟针
-                const handAngle = t * 0.8 - Math.PI / 2;
-                ctx.strokeStyle = '#1A1A2E';
+                // ─ 钟针（随 glowTimer 缓慢转动，暗示时间凝固）
+                const handAngle = t * 0.15 - Math.PI / 2;  // 极慢转动
+                ctx.strokeStyle = 'rgba(58,42,26,0.8)';
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y - 20);
                 ctx.lineTo(this.x + Math.cos(handAngle) * 7, this.y - 20 + Math.sin(handAngle) * 7);
                 ctx.stroke();
 
-                // 向下指引箭头（悬浮在古钟正上方）
-                const arrowY = this.y - 82 + Math.sin(t * 2.5) * 4;
-                ctx.fillStyle = `rgba(196,163,90,${0.6 + pulse * 0.4})`;
+                // ─ 悬浮指引箭头
+                const arrowY = this.y - 80 + Math.sin(t * 2.5) * 4;
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = `rgba(196,163,90,${0.55 + pulse * 0.4})`;
                 ctx.beginPath();
                 ctx.moveTo(this.x, arrowY + 12);
                 ctx.lineTo(this.x - 8, arrowY);
@@ -480,7 +532,7 @@ class TutorialSystem {
                 ctx.closePath();
                 ctx.fill();
 
-                // 玩家靠近时显示世界坐标系 [E] 提示
+                // ─ 玩家靠近时显示世界坐标系 [E] 提示
                 const _player = _game && _game.player;
                 if (_player) {
                     const _dx = this.x - _player.x;
@@ -488,14 +540,12 @@ class TutorialSystem {
                     const _dist = Math.sqrt(_dx * _dx + _dy * _dy);
                     if (_dist < 80) {
                         const _alpha = Math.min(1, 1.2 - _dist / 80);
-                        ctx.fillStyle = `rgba(244,228,188,${_alpha})`;
-                        ctx.strokeStyle = `rgba(196,163,90,${_alpha * 0.8})`;
-                        ctx.lineWidth = 1;
-                        ctx.font = 'bold 13px "ZCOOL XiaoWei", monospace';
-                        ctx.textAlign = 'center';
-                        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                        ctx.shadowColor = 'rgba(0,0,0,0.9)';
                         ctx.shadowBlur = 4;
-                        ctx.fillText('[E]', this.x, this.y - 96);
+                        ctx.fillStyle = `rgba(244,228,188,${_alpha})`;
+                        ctx.font = 'bold 13px "PingFang SC", sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('[E]', this.x, this.y - 94);
                     }
                 }
 
@@ -515,47 +565,62 @@ class TutorialSystem {
     // ═══════════════════════════════════════════════════════════
     
     _playTransitionAnimation() {
+        // 随水墨散、时间回流意象设计
+        // 节奏: 0s齐调鼓声 → 0.3s墨点扩散 → 2.1s全黑 → 2.4s诗句出现 → 4.2s“第一日” → 5.8s淡出 → 6.8s开始
         const overlay = document.createElement('div');
         overlay.className = 'tutorial-transition-overlay';
-        overlay.innerHTML = `
-            <div class="transition-cracks"></div>
-            <div class="transition-text">
-                <span class="fall-text">——然后你醒了。</span>
-                <span class="fall-text delay">或者说，你以为自己醒了。</span>
-            </div>
-        `;
+        
+        // 诗句模块
+        const poem = document.createElement('p');
+        poem.className = 'ink-poem';
+        poem.innerHTML = '钟声响了一下，就停了。<em>你是第一个听见的人。</em>';
+        
+        // 第一日模块
+        const chapter = document.createElement('div');
+        chapter.className = 'chapter-reveal';
+        chapter.innerHTML = '<span class="day-label">第一日</span>';
+        
+        overlay.appendChild(poem);
+        overlay.appendChild(chapter);
         document.body.appendChild(overlay);
         
-        // 播放音效
+        // 阶段一: 鼓声 + 墨迹扩散开始 (0 → 300ms)
         GameAudio.playClockChime?.();
+        setTimeout(() => overlay.classList.add('ink-spreading'), 50);
         
-        // 动画阶段
-        setTimeout(() => overlay.classList.add('cracking'), 500);
-        setTimeout(() => overlay.classList.add('fading'), 2000);
-        setTimeout(() => overlay.classList.add('falling'), 3500);
-        
-        // 显示"第一日"
+        // 阶段二: 墨迹盖满，切换到纯黑状态 (1.85s)
         setTimeout(() => {
-            overlay.innerHTML = `
-                <div class="chapter-reveal">
-                    <span class="day-label">第一日</span>
-                </div>
-            `;
-            overlay.classList.remove('cracking', 'fading', 'falling');
-            overlay.classList.add('day-reveal');
-        }, 4500);
+            overlay.classList.remove('ink-spreading');
+            overlay.classList.add('ink-full');
+        }, 1850);
         
-        // 开始正式游戏
+        // 阶段三: 诗句出现 (2.4s)
+        setTimeout(() => poem.classList.add('visible'), 2400);
+        
+        // 阶段四: “第一日”揭露 (4.2s)
+        setTimeout(() => chapter.classList.add('visible'), 4200);
+        
+        // 阶段5: 整体淡出 (5.8s)
+        setTimeout(() => overlay.classList.add('fade-out'), 5800);
+        
+        // 阶段6: 开始正式游戏 (6.8s)
         setTimeout(() => {
-            overlay.classList.add('fade-out');
-            setTimeout(() => {
-                overlay.remove();
-                this._startMainGame();
-            }, 1000);
-        }, 6500);
+            overlay.remove();
+            this._startMainGame();
+        }, 6800);
     }
     
     _startMainGame() {
+        // 调试序章模式：拦截，不进入正式游戏，不写存档标记
+        if (this.game._isDebugTutorial) {
+            this.game.isTutorialMode = false;
+            document.getElementById('debug-tutorial-watermark')?.classList.remove('visible');
+            this.game.ui?.showDialog('[DEBUG] 序章检查完成 ✓  点击外挂面板"退出&恢复"回到主存档', 5000);
+            // 停止 gameLoop 继续渲染教程世界（不销毁，仅冻结）
+            this.game.paused = true;
+            return;
+        }
+
         // 标记教程完成
         localStorage.setItem('shiseji_tutorial_done', '1');
         this.game.isTutorialMode = false;

@@ -2269,6 +2269,17 @@ body {
     color: #C4A35A;
 }
 
+/* 分隔线（叙事工具区标题）*/
+.cheat-divider {
+    font-size: 10px;
+    color: rgba(196,163,90,0.4);
+    letter-spacing: 2px;
+    text-align: center;
+    padding: 4px 0 2px;
+    border-top: 1px solid rgba(196,163,90,0.12);
+    margin-top: 4px;
+}
+
 /* 功能按钮 */
 .cheat-action-btn {
     padding: 3px 12px;
@@ -2771,24 +2782,50 @@ body {
     letter-spacing: 0.05em;
 }
 
-.tutorial-key-hint {
+/* 键位提示组容器 */
+.tutorial-key-group {
     position: fixed;
     bottom: 25%;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(184, 134, 11, 0.2);
-    border: 2px solid rgba(184, 134, 11, 0.6);
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
-    font-family: monospace;
-    font-size: 1.2rem;
-    color: #E8D8A8;
-    animation: keyHintPulse 1.5s ease-in-out infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
     z-index: 545;
+    animation: keyHintPulse 1.8s ease-in-out infinite;
+    pointer-events: none;
+}
+.tutorial-key-row {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+/* 单键帽样式（无衬线体确保字母可辨识）*/
+.tutorial-key-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    background: linear-gradient(to bottom, #EFE3C8 0%, #C8AA78 60%, #B89458 100%);
+    border: 1px solid rgba(100, 78, 38, 0.9);
+    border-bottom: 3px solid rgba(70, 52, 22, 0.95);
+    border-radius: 5px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.22);
+    font-family: "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #1A0E00;
+    letter-spacing: 0;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.15);
+    line-height: 1;
+    user-select: none;
 }
 @keyframes keyHintPulse {
-    0%, 100% { box-shadow: 0 0 10px rgba(184, 134, 11, 0.3); }
-    50% { box-shadow: 0 0 20px rgba(184, 134, 11, 0.6); }
+    0%, 100% { filter: drop-shadow(0 0 4px rgba(184,134,11,0.3)); }
+    50%       { filter: drop-shadow(0 0 12px rgba(184,134,11,0.7)); }
 }
 
 .tutorial-highlight {
@@ -2800,81 +2837,103 @@ body {
     50% { box-shadow: 0 0 25px rgba(200, 168, 96, 0.8); }
 }
 
-/* 过渡动画 */
+/* ══ 序章→正式游戏 过渡动画（墨迹晕染） ══ */
 .tutorial-transition-overlay {
     position: fixed;
     inset: 0;
     z-index: 700;
-    background: rgba(15, 12, 20, 0);
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: background 1s ease;
+    gap: 1.6rem;
+    pointer-events: none;
+    /* 初始：透明 */
+    background: radial-gradient(circle 0vmax at 50% 50%,
+        #080608 0%, transparent 100%);
+    transition: none;
 }
-.tutorial-transition-overlay.cracking {
-    background: rgba(15, 12, 20, 0.3);
+/* 阶段1：墨迹从中心扩散 */
+.tutorial-transition-overlay.ink-spreading {
+    animation: inkSpread 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-.tutorial-transition-overlay.cracking .transition-cracks {
-    opacity: 1;
+@keyframes inkSpread {
+    0%   { background: radial-gradient(circle 0vmax at 50% 50%, #080608 0%, transparent 100%); }
+    100% { background: radial-gradient(circle 160vmax at 50% 50%, #080608 0%, #080608 100%); }
 }
-.transition-cracks {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    background: 
-        linear-gradient(45deg, transparent 48%, rgba(60, 50, 70, 0.5) 49%, rgba(60, 50, 70, 0.5) 51%, transparent 52%),
-        linear-gradient(-45deg, transparent 48%, rgba(60, 50, 70, 0.5) 49%, rgba(60, 50, 70, 0.5) 51%, transparent 52%);
-    background-size: 60px 60px;
-    animation: cracksSpread 2s ease-out forwards;
+/* 阶段2：全黑后保持 */
+.tutorial-transition-overlay.ink-full {
+    background: #080608;
 }
-@keyframes cracksSpread {
-    from { background-size: 200px 200px; opacity: 0; }
-    to { background-size: 30px 30px; opacity: 1; }
-}
-.tutorial-transition-overlay.fading {
-    background: rgba(15, 12, 20, 0.85);
-}
-.tutorial-transition-overlay.fading .transition-cracks {
-    filter: grayscale(1);
-}
-.tutorial-transition-overlay.falling {
-    background: rgba(5, 3, 8, 0.98);
-}
-.transition-text {
-    text-align: center;
-    z-index: 1;
-}
-.fall-text {
-    display: block;
+/* 诗句文字 */
+.ink-poem {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 1.5rem;
-    color: #A89878;
-    opacity: 0;
-    animation: fallTextIn 1.5s ease-out 2.5s forwards;
+    font-size: 1.4rem;
+    color: rgba(196, 163, 90, 0);
+    text-align: center;
+    line-height: 2.2;
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 20px rgba(196,163,90,0.4);
+    transition: color 1.2s ease;
+    pointer-events: none;
 }
-.fall-text.delay {
-    animation-delay: 3.5s;
+.ink-poem.visible {
+    color: rgba(196, 163, 90, 0.88);
 }
-@keyframes fallTextIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
+.ink-poem em {
+    display: block;
+    font-style: normal;
+    font-size: 1.0rem;
+    color: rgba(165, 138, 80, 0.65);
+    margin-top: 0.4rem;
+    letter-spacing: 0.08em;
 }
-.tutorial-transition-overlay.day-reveal {
-    background: rgba(5, 3, 8, 1);
-}
+/* 第一日 揭幕 */
 .chapter-reveal {
     text-align: center;
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+.chapter-reveal.visible {
+    opacity: 1;
 }
 .day-label {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 3rem;
+    font-size: 3.2rem;
     color: #C8A860;
-    letter-spacing: 0.3em;
-    animation: dayReveal 1.5s ease-out forwards;
+    letter-spacing: 0.4em;
+    text-shadow: 0 0 30px rgba(196,163,90,0.5), 0 2px 8px rgba(0,0,0,0.8);
 }
-@keyframes dayReveal {
-    from { opacity: 0; transform: scale(0.8); }
-    to { opacity: 1; transform: scale(1); }
+/* 阶段3：整体淡出进入游戏 */
+.tutorial-transition-overlay.fade-out {
+    animation: overlayFadeOut 1s ease forwards;
+}
+@keyframes overlayFadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+/* ══ 调试模式水印 ══ */
+#debug-tutorial-watermark {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 9900;
+    background: rgba(180, 0, 0, 0.18);
+    border: 1px solid rgba(220, 60, 60, 0.5);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-family: "PingFang SC", "Helvetica Neue", monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: rgba(255, 120, 120, 0.85);
+    letter-spacing: 0.05em;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+    display: none;
+}
+#debug-tutorial-watermark.visible {
+    display: block;
 }
 
 /* ══════════════════════════════════════

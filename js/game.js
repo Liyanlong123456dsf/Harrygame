@@ -42,6 +42,11 @@ class Game {
             timeMultiplier: 1
         };
         
+        // 调试序章模式（Task 6：重进序章不影响正式存档）
+        this._isDebugTutorial = false;
+        this._debugSaveBackup = null;   // 内存备份，不写 localStorage
+        this._activeIntro     = null;   // Task 5：序言实例引用
+        
         // 存档系统
         this.saveKey = 'shiseji_save';
         this.autoSaveInterval = 30000; // 30秒自动存档
@@ -264,6 +269,7 @@ class Game {
     // ═══════════════════════════════════════════════════════════
     
     saveGame() {
+        if (this._isDebugTutorial) return false;  // 调试序章模式禁止存档
         if (!this.gameStarted || this.gameEnded || !this.player || !this.world) return false;
         
         try {
@@ -425,12 +431,103 @@ class Game {
     }
     
     _startAutoSave() {
+        if (this._isDebugTutorial) return;  // 调试序章模式不启动自动存档
         if (this._autoSaveTimer) clearInterval(this._autoSaveTimer);
         this._autoSaveTimer = setInterval(() => {
             if (this.gameStarted && !this.gameEnded && !this.paused) {
                 this.saveGame();
             }
         }, this.autoSaveInterval);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 调试序章模式（Task 6）
+    // ═══════════════════════════════════════════════════════════
+
+    _enterDebugTutorial() {
+        // 备份当前存档到内存（不动 localStorage 原始数据）
+        this._debugSaveBackup = localStorage.getItem(this.saveKey);
+        this._isDebugTutorial = true;
+
+        // 重置教程状态
+        if (this._autoSaveTimer) { clearInterval(this._autoSaveTimer); this._autoSaveTimer = null; }
+        this.isTutorialMode = true;
+        this.gameStarted    = true;
+        this.gameEnded      = false;
+        this.paused         = false;
+
+        // 清理旧 world / quest
+        this.quest = null;
+        this.tutorial = null;
+
+        // 同 _startTutorialMode 流程
+        const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        if (isMobile && window.innerHeight < 500) this.cameraZoom = 0.65;
+
+        const effectiveWidth  = this.width  / this.cameraZoom;
+        const effectiveHeight = this.height / this.cameraZoom;
+        const tutorialWidth   = Math.max(effectiveWidth  * 1.5, 2000);
+        const tutorialHeight  = Math.max(effectiveHeight * 1.5, 1200);
+
+        this.world = new World(tutorialWidth, tutorialHeight);
+        this.world.day = 0;
+        this.world.isTutorial = true;
+        this.world.gameTime   = 1020;
+        this.world.creatures.creatures = [];
+
+        const playerX = tutorialWidth  / 2;
+        const playerY = tutorialHeight / 2;
+        this.player = new Player(playerX, playerY);
+
+        const vw = this.width  / this.cameraZoom;
+        const vh = this.height / this.cameraZoom;
+        this.camera.x = Math.max(0, playerX - vw / 2);
+        this.camera.y = Math.max(0, playerY - vh / 2);
+
+        this.tutorial = new TutorialSystem(this);
+        this.tutorial.start();
+
+        // 确保 UI 切换到游戏模式
+        this.startScreen?.classList.add('hidden');
+        document.getElementById('game-ui')?.classList.remove('hidden');
+        if (this.mobileControls) this.mobileControls.show();
+
+        // 显示水印
+        const wm = document.getElementById('debug-tutorial-watermark');
+        if (wm) wm.classList.add('visible');
+
+        // 注册 beforeunload 警告
+        this._debugBeforeUnload = (e) => {
+            e.preventDefault();
+            e.returnValue = '正在调试序章，刷新将恢复主存档。确定要离开？';
+        };
+        window.addEventListener('beforeunload', this._debugBeforeUnload);
+
+        this.ui?.showDialog('[DEBUG] 序章调试模式已启动，存档已备份');
+    }
+
+    _exitDebugTutorial() {
+        if (!this._isDebugTutorial) return;
+
+        // 移除水印和 beforeunload
+        const wm = document.getElementById('debug-tutorial-watermark');
+        if (wm) wm.classList.remove('visible');
+        if (this._debugBeforeUnload) {
+            window.removeEventListener('beforeunload', this._debugBeforeUnload);
+            this._debugBeforeUnload = null;
+        }
+
+        this._isDebugTutorial = false;
+        this.isTutorialMode   = false;
+        this.tutorial         = null;
+
+        // 恢复存档并重新加载
+        if (this._debugSaveBackup !== null) {
+            localStorage.setItem(this.saveKey, this._debugSaveBackup);
+        }
+        this._debugSaveBackup = null;
+
+        location.reload();
     }
     
     _stopAutoSave() {
@@ -950,7 +1047,9 @@ class Game {
         // 进入世界互动动画
         if (typeof IntroAnimation !== 'undefined') {
             const intro = new IntroAnimation();
+            this._activeIntro = intro;   // Task 5：允许调试面板跳过
             await intro.play();
+            this._activeIntro = null;
         }
 
         // 检查是否需要教程（首次游戏）
@@ -1638,9 +1737,12 @@ class Game {
         const panelClose  = document.getElementById('cheat-panel-close');
         const chkInvinc   = document.getElementById('cheat-invincible');
         const speedBtns   = document.querySelectorAll('.cheat-speed-btn');
-        const btnFillColor  = document.getElementById('cheat-fill-color');
-        const btnFillInk    = document.getElementById('cheat-fill-ink');
-        const chkInfItems   = document.getElementById('cheat-infinite-items');
+        const btnFillColor      = document.getElementById('cheat-fill-color');
+        const btnFillInk        = document.getElementById('cheat-fill-ink');
+        const chkInfItems       = document.getElementById('cheat-infinite-items');
+        const btnSkipIntro      = document.getElementById('cheat-skip-intro');
+        const btnEnterTutorial  = document.getElementById('cheat-enter-tutorial');
+        const btnExitTutorial   = document.getElementById('cheat-exit-tutorial');
 
         if (!trigger || !pwdOverlay || !panel) return;
 
@@ -1728,6 +1830,38 @@ class Game {
         btnFillInk.addEventListener('click', () => {
             if (this.player) this.player.addStat('ink', 9999);
         });
+
+        // ── 跳过序言（Task 5）──
+        if (btnSkipIntro) {
+            btnSkipIntro.addEventListener('click', () => {
+                if (this._activeIntro) {
+                    this._activeIntro.stop();
+                } else {
+                    this.ui?.showDialog('序言当前未播放');
+                }
+            });
+        }
+
+        // ── 重进序章 / 退出序章（Task 6）──
+        if (btnEnterTutorial) {
+            btnEnterTutorial.addEventListener('click', () => {
+                if (this._isDebugTutorial) {
+                    this.ui?.showDialog('已在序章调试模式中');
+                    return;
+                }
+                panel.classList.add('hidden');
+                this._enterDebugTutorial();
+            });
+        }
+        if (btnExitTutorial) {
+            btnExitTutorial.addEventListener('click', () => {
+                if (!this._isDebugTutorial) {
+                    this.ui?.showDialog('当前不在序章调试模式');
+                    return;
+                }
+                this._exitDebugTutorial();  // 恢复存档后 reload
+            });
+        }
 
         // 阻止面板内所有按键冒泡到游戏
         panel.addEventListener('keydown', (e) => e.stopPropagation());

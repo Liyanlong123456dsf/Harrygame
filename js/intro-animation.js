@@ -73,6 +73,11 @@ class IntroAnimation {
         this.canvas.height = window.innerHeight;
     }
 
+    // 公开方法：外部（如调试面板）直接终止序言动画
+    stop() {
+        this._skipRequested = true;
+    }
+
     _end() {
         if (this._raf) { cancelAnimationFrame(this._raf); this._raf = null; }
         window.removeEventListener('resize', this._onResize);
