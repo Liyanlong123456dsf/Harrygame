@@ -475,7 +475,7 @@ class AchievementSystem {
     }
     
     dropRandomLoot() {
-        const loots = ['stardustGrass', 'morningDew', 'charBone', 'colorFruit'];
+        const loots = ['stardustGrass', 'morningDew', 'charBranch', 'colorFruitRed', 'colorFruitYellow', 'colorFruitBlue'];
         const item = loots[Math.floor(Math.random() * loots.length)];
         
         this.game.player?.inventory.addItem(item, 1);
@@ -486,8 +486,10 @@ class AchievementSystem {
         const names = {
             stardustGrass: '星尘草',
             morningDew: '晨露珠',
-            charBone: '炭骨枝',
-            colorFruit: '彩实'
+            charBranch: '炭骨枝',
+            colorFruitRed: '赤彩实',
+            colorFruitYellow: '黄彩实',
+            colorFruitBlue: '蓝彩实'
         };
         return names[itemId] || itemId;
     }

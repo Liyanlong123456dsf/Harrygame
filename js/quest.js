@@ -314,9 +314,10 @@ class QuestSystem {
         const target = stage.getTarget(player, world);
         if (!target || target.dist < 150) return;
         
-        // 屏幕坐标
-        const screenX = target.x - this.game.camera.x;
-        const screenY = target.y - this.game.camera.y;
+        // 屏幕坐标（需乘以 cameraZoom 才能与实际渲染像素对齐）
+        const zoom = this.game.cameraZoom || 1;
+        const screenX = (target.x - this.game.camera.x) * zoom;
+        const screenY = (target.y - this.game.camera.y) * zoom;
         
         // 判断是否在屏幕外
         const margin = 60;
