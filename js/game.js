@@ -971,11 +971,12 @@ class Game {
             this.cameraZoom = 0.65;
         }
         
-        // 创建教程世界（需要足够大以适配缩放后的视口）
+        // 创建教程世界（需要足够大以适配缩放后的视口，保证相机能跟随玩家）
         const effectiveWidth = this.width / this.cameraZoom;
         const effectiveHeight = this.height / this.cameraZoom;
-        const tutorialWidth = Math.max(effectiveWidth + 200, 1400);
-        const tutorialHeight = Math.max(effectiveHeight + 200, 1000);
+        // 世界尺寸需要比视口大很多，确保玩家在任意位置都能被相机跟随
+        const tutorialWidth = Math.max(effectiveWidth * 1.5, 2000);
+        const tutorialHeight = Math.max(effectiveHeight * 1.5, 1200);
         
         this.world = new World(tutorialWidth, tutorialHeight);
         this.world.day = 0;

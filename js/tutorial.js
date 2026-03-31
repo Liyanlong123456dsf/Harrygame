@@ -13,7 +13,7 @@ class TutorialSystem {
                 id: 'move',
                 objective: '移动',
                 narration: '你的脚步声惊醒了灰尘。',
-                hint: 'WASD 或 摇杆移动',
+                hint: '按 WASD 或 摇杆移动',
                 highlightKeys: ['W', 'A', 'S', 'D'],
                 highlightElement: 'joystick-zone',
                 check: () => this._checkMoved(),

@@ -723,9 +723,9 @@ class IntroAnimation {
             ctx.restore();
         }
 
-        // 文字 - 添加到滚动队列（深色文字适配浅色背景）
+        // 文字 - 添加到滚动队列
         if (t > 1.0) {
-            this._addScrollingText('最后一眼，是满树铅粉的石榴。\n然后，他跌入了褪色界。', 18, 'rgba(55,35,80,0.9)');
+            this._addScrollingText('最后一眼，是满树绚粉的石榴。\n然后，他跌入了褪色界。', 18, 'rgba(244,228,188,0.95)');
         }
 
         // 最终整体淡黑
