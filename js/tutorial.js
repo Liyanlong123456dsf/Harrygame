@@ -332,7 +332,7 @@ class TutorialSystem {
         const px = this.game.player.x;
         const py = this.game.player.y;
         
-        // 创建教程专用资源节点（带collect方法）
+        // 创建教程专用资源节点（带collect和draw方法）
         this.tutorialGear = {
             type: 'RUSTY_GEAR',
             x: px + 80,
@@ -341,7 +341,22 @@ class TutorialSystem {
             isTutorial: true,
             radius: 15,
             glowTimer: 0,
-            // 模拟ResourceNode的collect方法
+            draw: function(ctx) {
+                if (!this.available) return;
+                this.glowTimer = (this.glowTimer || 0) + 0.05;
+                const glow = (Math.sin(this.glowTimer * 3) + 1) * 0.5;
+                ctx.save();
+                ctx.shadowColor = 'rgba(196,163,90,0.9)';
+                ctx.shadowBlur = 10 + glow * 8;
+                ctx.fillStyle = `rgba(196,163,90,${0.7 + glow * 0.3})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,220,120,0.9)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            },
             collect: function(player) {
                 if (!this.available) return null;
                 this.available = false;
@@ -382,7 +397,18 @@ class TutorialSystem {
             x: px + 100,
             y: py,
             interactable: true,
-            isTutorial: true
+            isTutorial: true,
+            draw: function(ctx) {
+                ctx.save();
+                ctx.shadowColor = 'rgba(196,163,90,0.8)';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = 'rgba(196,163,90,0.9)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 18, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
         };
         
         // 添加到世界

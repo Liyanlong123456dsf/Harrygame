@@ -293,25 +293,15 @@ class IntroAnimation {
             const textCenterX = isLandscape ? textAreaX + (W - textAreaX) / 2 : W / 2;
             const blockHeight = lines.length * lineH;
             
-            // 绘制半透明背景提升可读性
-            ctx.globalAlpha = item.alpha * 0.6;
-            ctx.fillStyle = 'rgba(10, 8, 20, 0.7)';
-            const bgPadding = 20;
-            const bgWidth = maxLineW + bgPadding * 2;
-            ctx.fillRect(
-                textCenterX - bgWidth / 2,
-                item.y - bgPadding,
-                bgWidth,
-                blockHeight + bgPadding * 2
-            );
+            // 轻描边阴影代替黑底，保留可读性的同时不遮挡画面
             
             // 绘制文字
             ctx.globalAlpha = item.alpha;
             ctx.fillStyle = item.color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.shadowColor = 'rgba(0,0,0,0.9)';
-            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(0,0,0,0.95)';
+            ctx.shadowBlur = 18;
             
             let charsLeft = item.revealed;
             lines.forEach((line, idx) => {
