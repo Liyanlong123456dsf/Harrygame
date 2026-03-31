@@ -965,21 +965,38 @@ class Game {
     async _startTutorialMode() {
         this.isTutorialMode = true;
         
-        // 创建教程世界（与画布大小适配，确保填满屏幕）
-        const tutorialWidth = Math.max(this.width, 1200);
-        const tutorialHeight = Math.max(this.height, 800);
+        // 检测移动端并提前设置缩放
+        const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        if (isMobile && window.innerHeight < 500) {
+            this.cameraZoom = 0.65;
+        }
+        
+        // 创建教程世界（需要足够大以适配缩放后的视口）
+        const effectiveWidth = this.width / this.cameraZoom;
+        const effectiveHeight = this.height / this.cameraZoom;
+        const tutorialWidth = Math.max(effectiveWidth + 200, 1400);
+        const tutorialHeight = Math.max(effectiveHeight + 200, 1000);
+        
         this.world = new World(tutorialWidth, tutorialHeight);
         this.world.day = 0;
         this.world.isTutorial = true;
         this.world.gameTime = 1020; // 黄昏17:00
-        this.world.generateWorld();  // 生成地形背景
-        // 教程不生成随机资源，由TutorialSystem控制
+        // World构造函数已调用generateWorld()，清除教程不需要的生物
+        this.world.creatures.creatures = [];
         
         // 创建玩家（居中）
-        this.player = new Player(tutorialWidth / 2, tutorialHeight / 2);
+        const playerX = tutorialWidth / 2;
+        const playerY = tutorialHeight / 2;
+        this.player = new Player(playerX, playerY);
         this.player.stats.color = 100;
         this.player.stats.ink = 100;
         this.player.stats.warmth = 100;
+        
+        // 初始化相机位置跟随玩家
+        const vw = this.width / this.cameraZoom;
+        const vh = this.height / this.cameraZoom;
+        this.camera.x = Math.max(0, Math.min(playerX - vw / 2, tutorialWidth - vw));
+        this.camera.y = Math.max(0, Math.min(playerY - vh / 2, tutorialHeight - vh));
         
         // 初始化统计追踪
         this.player.stats.totalCollected = 0;
@@ -1002,10 +1019,7 @@ class Game {
         this.gameStarted = true;
         this.lastTime = performance.now();
         
-        const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-        if (isMobile && window.innerHeight < 500) {
-            this.cameraZoom = 0.65;
-        }
+        // 移动端控件显示
         if (this.mobileControls) this.mobileControls.show();
         
         requestAnimationFrame((time) => this.gameLoop(time));
