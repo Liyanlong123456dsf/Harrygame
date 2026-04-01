@@ -293,7 +293,13 @@ class Game {
                 player: {
                     x: this.player.x,
                     y: this.player.y,
-                    stats: { ...this.player.stats },
+                    stats: {
+                        ...this.player.stats,
+                        uniqueResources: Array.from(
+                            this.player.stats.uniqueResources instanceof Set
+                                ? this.player.stats.uniqueResources : new Set()
+                        )
+                    },
                     pigments: { ...this.player.pigments },
                     clockPieces: this.player.clockPieces,
                     clockOilUsed: this.player.clockOilUsed,
@@ -338,7 +344,16 @@ class Game {
         try {
             const raw = localStorage.getItem(this.saveKey);
             if (!raw) return null;
-            return JSON.parse(raw);
+            const data = JSON.parse(raw);
+            if (!data.version || data.version < 1) {
+                console.warn('[存档] 版本不兼容或已损坏');
+                return null;
+            }
+            if (!data.timestamp || typeof data.timestamp !== 'number') {
+                console.warn('[存档] 完整性校验失败');
+                return null;
+            }
+            return data;
         } catch (e) {
             console.warn('[存档] 读取失败:', e);
             return null;
@@ -486,12 +501,9 @@ class Game {
                 this.player.inventory.deserialize(saveData.player.inventory);
             }
             
-            // P0 fix: Set 不可 JSON 序列化，反序列化后需手动还原
-            if (this.player.stats.uniqueResources && !(this.player.stats.uniqueResources instanceof Set)) {
-                this.player.stats.uniqueResources = new Set(Object.keys(this.player.stats.uniqueResources));
-            } else if (!this.player.stats.uniqueResources) {
-                this.player.stats.uniqueResources = new Set();
-            }
+            // uniqueResources 在 saveGame() 中序列化为 Array，此处还原为 Set
+            const savedUnique = this.player.stats.uniqueResources;
+            this.player.stats.uniqueResources = new Set(Array.isArray(savedUnique) ? savedUnique : []);
             
             // 恢复装备
             if (saveData.player.equippedWeapon) {
@@ -1279,6 +1291,7 @@ class Game {
         // 创建UI
         this.ui = new UI(this);
         this.ui.show();
+        this.ui.initOutsideClickHandler();
         
         // 创建成就系统
         this.achievements = new AchievementSystem(this);
@@ -1641,7 +1654,8 @@ class Game {
             const sx = (light.x - this.camera.x) * this.cameraZoom;
             const sy = (light.y - this.camera.y) * this.cameraZoom;
             
-            const sr = light.radius * this.cameraZoom;
+            const nightVisionMult = this.player ? this.player.getEffectiveValue(1, 'nightVision') : 1;
+            const sr = light.radius * this.cameraZoom * nightVisionMult;
             const gradient = dctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
             gradient.addColorStop(0, `rgba(0, 0, 0, ${light.intensity})`);
             gradient.addColorStop(0.6, `rgba(0, 0, 0, ${light.intensity * 0.4})`);

@@ -112,9 +112,9 @@
                             <tr><td>I</td><td>打开背包（点击装备或使用物品）</td></tr>
                             <tr><td>C</td><td>打开调色盘（合成）</td></tr>
                             <tr><td>F</td><td>放置纸灯</td></tr>
-                            <tr><td>1</td><td>使用赤色颜料（消耗20，对纸络蛛造成燃烧眩晕3秒）</td></tr>
-                            <tr><td>2</td><td>使用金色颜料（消耗20，撒散金色粒子）</td></tr>
-                            <tr><td>3</td><td>使用蓝色颜料（消耗20，撒散蓝色粒子）</td></tr>
+                            <tr><td>1</td><td>撒散赤色颜料（消耗20，粒子特效）；持有时攻击纸络蛛自动触发燃烧眩晕3秒</td></tr>
+                            <tr><td>2</td><td>撒散黄色颜料（消耗20，粒子特效）</td></tr>
+                            <tr><td>3</td><td>撒散蓝色颜料（消耗20，粒子特效）</td></tr>
                             <tr><td>ESC</td><td>关闭面板</td></tr>
                         </table>
                     </section>
@@ -150,9 +150,9 @@
                             <tr><td><span style="color:#708238">█</span> 星尘草</td><td>草地，分布广泛</td><td>色值 +15</td></tr>
                             <tr><td><span style="color:#6B9FFF">█</span> 晨露珠</td><td>石地区域</td><td>纸温 +20</td></tr>
                             <tr><td><span style="color:#2A2A3A">█</span> 炭骨枝</td><td>枯死树木</td><td>无直接效果，合成方用</td></tr>
-                            <tr><td><span style="color:#C2452D">█</span> 赤彩实</td><td>彩色树枝</td><td>色值 +20，提供赤色颜料</td></tr>
-                            <tr><td><span style="color:#C4A35A">█</span> 金彩实</td><td>彩色树枝</td><td>色值 +15，提供金色颜料</td></tr>
-                            <tr><td><span style="color:#4A7FBF">█</span> 蓝彩实</td><td>彩色树枝</td><td>色值 +10，提供蓝色颜料</td></tr>
+                            <tr><td><span style="color:#C2452D">█</span> 赤彩实</td><td>彩色树枝</td><td>色值 +20，提供赤色颜料+20</td></tr>
+                            <tr><td><span style="color:#C4A35A">█</span> 黄彩实</td><td>彩色树枝</td><td>色值 +15，提供黄色颜料+20</td></tr>
+                            <tr><td><span style="color:#4A7FBF">█</span> 蓝彩实</td><td>彩色树枝</td><td>色值 +10，提供蓝色颜料+20</td></tr>
                             <tr><td><span style="color:#808080">█</span> 灰絮</td><td>灰雾地带边缘</td><td>纸温 −5（慢慢采！）</td></tr>
                         </table>
                     </section>
@@ -162,11 +162,11 @@
                         <table class="guide-table recipe-table">
                             <tr><th>产物</th><th>材料</th><th>效果</th></tr>
                             <tr><td>安心茶</td><td>晨露×2 + 星尘草×1</td><td>墨韵+25，消除恐惧</td></tr>
-                            <tr><td>暖阳颜料</td><td>星尘草×2 + 晨露×1 + 金彩实×1</td><td>墨韵+35，提升周围饱和度</td></tr>
-                            <tr><td>纸灯</td><td>炭骨枝×3 + 星尘草×1 + 灰絮×2</td><td>夜间照明（半径150px），范围内纸温+5/秒</td></tr>
+                            <tr><td>暖阳颜料</td><td>星尘草×2 + 晨露×1 + 黄彩实×1</td><td>墨韵+35，提升周围饱和度</td></tr>
+                            <tr><td>纸灯</td><td>炭骨枝×3 + 星尘草×1 + 灰絮×2</td><td>夜间照明（半径150px），范围内纸温+5/分钟，持续8分钟</td></tr>
                             <tr><td>炭笔</td><td>炭骨枝×5</td><td>武器，攻击力+15</td></tr>
                             <tr><td>澄墨水</td><td>炭骨枝×2 + 晨露×2</td><td>墨韵+10，润滑剂原料</td></tr>
-                            <tr><td>七彩液</td><td>赤彩实×1 + 金彩实×1 + 蓝彩实×1</td><td>润滑剂原料</td></tr>
+                            <tr><td>七彩液</td><td>赤彩实×1 + 黄彩实×1 + 蓝彩实×1</td><td>润滑剂原料</td></tr>
                             <tr><td>古钟润滑剂 ★</td><td>七彩液×1 + 澄墨水×1 + 星尘草×3</td><td>修复古钟的关键道具</td></tr>
                             <tr><td>灰幕弹</td><td>灰絮×5 + 炭骨枝×1</td><td>投掷型，范围内敌人迷失方3秒</td></tr>
                         </table>
@@ -176,7 +176,7 @@
                         <h3>◈ 生物图鉴</h3>
                         <div class="guide-creature">
                             <span class="stat-dot" style="background:#FFD700"></span>
-                            <b>鸣蛹</b>（友好）— 发光的茧状生物，定期吟唱，附近玩家<b>回复墨韵值</b>。按 E 轻触可额外获得墨韵。
+                            <b>鸣蛹</b>（友好）— 发光的茧状生物，每20秒吟唱一次，200px范围内玩家<b>回复墨韵+15</b>。按 E 轻触可额外获得墨韵。
                         </div>
                         <div class="guide-creature">
                             <span class="stat-dot" style="background:#3A3A4E"></span>
@@ -184,7 +184,7 @@
                         </div>
                         <div class="guide-creature">
                             <span class="stat-dot" style="background:#D4C4A0"></span>
-                            <b>纸络蛛</b>（敌对）— 吐丝减速玩家，近身降低<b>纸温值</b>。血量第1日<b>45</b>→第2日<b>58</b>→第3日<b>76</b>。<b>赤色颜料（按1）</b>可使其燃烧眩晕3秒。击败后掉落灰絮×1-2。守卫钟塔附近，夜晚最多5只。
+                            <b>纸络蛛</b>（敌对）— 吐丝减速玩家，近身降低<b>纸温值</b>。血量第1日<b>45</b>→第2日<b>58</b>→第3日<b>76</b>。持有<b>赤色颜料</b>攻击时自动触发燃烧眩晕3秒（额外消耗颜料10）。击败后掉落灰絮×1-2。守卫钟塔附近，夜晚最多5只。
                         </div>
                         <p style="font-size:12px;opacity:0.7;margin-top:8px">⚠ 怪物会持续从你周围刷新，击杀不会清空战场。每过新的一天，怪物血量在前一天基础上提升<b>30%</b>，越战越强！</p>
                     </section>
@@ -226,9 +226,10 @@
 
                     <section class="guide-section">
                         <h3>◈ 成就与奖励</h3>
-                        <div class="guide-stat"><b>连击奖励</b> — 连续采集3次以上可获得额外奖励加成（+10%/20%/30%...）</div>
-                        <div class="guide-stat"><b>幸运掉落</b> — 采集有5%几率双倍，击杀有10%几率掉落稀有资源</div>
-                        <div class="guide-stat"><b>里程碑</b> — 完成特定目标解锁成就，获得永久加成（采集速度、夜视等）</div>
+                        <div class="guide-stat"><b>连击奖励</b> — 5秒内连续采集：3连+10%、4连+20%、5连+30%…依此类推</div>
+                        <div class="guide-stat"><b>幸运掉落</b> — 采集有5%基础概率双倍获得；击杀有10%概率掉落额外稀有资源</div>
+                        <div class="guide-stat"><b>里程碑</b> — 完成特定目标解锁成就，获得永久加成（采集速度、夜视、攻速、<b>巧手合成</b>等）</div>
+                        <div class="guide-stat"><b>巧手加成</b> — 解锁「匠心」成就（合成3件道具）后，每次合成有概率额外产出1个成品</div>
                         <p style="font-size:12px;opacity:0.7;margin-top:8px">成就弹窗会在解锁时短暂显示，不会打断游戏。</p>
                     </section>
 
@@ -238,10 +239,10 @@
                             <li>开始时背包自带<b>星尘草×3、晨露珠×2</b>，可先合成安心茶应急。</li>
                             <li>白天优先采集资源，入夜前合成至少一盏<b>纸灯</b>，放在身边防止色值流失。</li>
                             <li>古钟碎片靠近后会出现金色光晶，地图三个角落各有一片。</li>
-                            <li>遇到灰烬鸦可攻击击退；纸络蛛用<b>赤色颜料（按1）</b>可使其燃烧眩晕3秒。</li>
+                            <li>遇到灰烬鸦可攻击击退；攻击纸络蛛时持有<b>赤色颜料</b>（储量>10）可自动触发燃烧眩晕3秒。</li>
                             <li>灰絮攒5个可合成<b>灰幕弹</b>，对多敌情况十分有效。</li>
                             <li>鸣蛹附近是安全的休息点，歌声持续回复墨韵。</li>
-                            <li>彩实回复色值并补充对应颜料，赤彩实效果最大（+20）。</li>
+                            <li>彩实（赤/黄/蓝）采集后同时补充对应颜料+20；赤彩实色值回复最多（+20）。</li>
                             <li>右上角时间进度条悬停可展开完整面板，左下角任务进度悬停可查看详情。</li>
                             <li>优先合成<b>炭笔</b>并装备，攻击力从10提升到<b>25</b>，大幅提升战斗效率。</li>
                             <li>怪物会<b>不断刷新</b>，无需清场，专注资源采集和通关目标更高效。</li>
