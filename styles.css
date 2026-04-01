@@ -884,7 +884,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: rgba(26, 26, 62, 0.8);
+    /* 径向渐变：中心聚焦 UI，四周保留世界知觉（大纲第 4 节“每帧画面都是叙事”） */
+    background: radial-gradient(ellipse at center, rgba(5, 3, 18, 0.12) 0%, rgba(5, 3, 18, 0.46) 100%);
     z-index: 100;
 }
 
@@ -2970,18 +2971,23 @@ body {
     position: fixed;
     top: 12%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(0);
     background: rgba(20, 18, 25, 0.45);
     border: 1px solid rgba(184, 134, 11, 0.4);
     border-radius: 8px;
     padding: 1rem 2rem;
     z-index: 540;
     text-align: center;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    opacity: 1;
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 .tutorial-objective.hidden {
     display: none;
+}
+.tutorial-objective.hiding {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+    pointer-events: none;
 }
 .objective-text {
     font-family: 'Ma Shan Zheng', cursive;
@@ -3011,6 +3017,12 @@ body {
     z-index: 545;
     animation: keyHintPulse 1.8s ease-in-out infinite;
     pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s ease-out;
+}
+.tutorial-key-group.hiding {
+    opacity: 0;
+    animation: none; /* 淡出期间停止脉动 */
 }
 .tutorial-key-row {
     display: flex;
@@ -3177,6 +3189,19 @@ body {
         opacity: 1;
         transform: translateY(-50%) scale(1);
     }
+    /* 教程 UI 淡出 → 瞬间完成 */
+    .tutorial-objective,
+    .tutorial-key-group {
+        transition: none;
+    }
+    .tutorial-objective.hiding {
+        opacity: 0;
+        transform: translateX(-50%) translateY(0); /* 无位移，只隐藏 */
+    }
+    /* 成就弹窗滑入 → 瞬间到位 */
+    .achievement-popup {
+        transition: none;
+    }
 }
 /* 阶段3：整体淡出进入游戏 */
 .tutorial-transition-overlay.fade-out {
@@ -3215,9 +3240,10 @@ body {
 ══════════════════════════════════════ */
 .achievement-popup {
     position: fixed;
-    top: 28%;   /* Bug4: 避开 tutorial-objective(top:12%) 约80px高的区间 */
-    left: 50%;
-    transform: translateX(-50%) translateY(-20px);
+    top: 12vh;
+    right: 5vw;
+    left: auto;
+    transform: translateX(calc(100% + 24px)); /* 初始：隐藏在右侧屏幕外 */
     background: linear-gradient(135deg, rgba(40, 35, 50, 0.95), rgba(25, 22, 32, 0.98));
     border: 1px solid rgba(255, 215, 0, 0.4);
     border-radius: 10px;
@@ -3227,16 +3253,17 @@ body {
     gap: 1rem;
     z-index: 560;
     opacity: 0;
-    transition: all 0.5s ease;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+    max-width: min(320px, 88vw);
 }
 .achievement-popup.show {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(0); /* 滑入终点 */
 }
 .achievement-popup.hide {
     opacity: 0;
-    transform: translateX(-50%) translateY(-30px);
+    transform: translateX(calc(100% + 24px)); /* 向右滑出 */
 }
 .achievement-icon {
     font-size: 2rem;
@@ -3408,8 +3435,10 @@ body {
         padding: 0.3rem 0.8rem;
     }
     .achievement-popup {
-        top: 22%;  /* Bug4 mobile: tutorial-objective is smaller, 22% gives enough clearance */
+        top: calc(8vh + env(safe-area-inset-top, 0px));
+        right: max(env(safe-area-inset-right, 5vw), 5vw);
         padding: 0.6rem 1rem;
+        max-width: min(260px, 72vw);
     }
     .achievement-icon {
         font-size: 1.5rem;
@@ -3446,4 +3475,84 @@ body {
     .tutorial-highlight {
         box-shadow: 0 0 20px rgba(200, 168, 96, 0.8) !important;
     }
+}
+
+/* ══════════════════════════════════════
+   ModalManager 暗化背景
+══════════════════════════════════════ */
+#modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 890;
+    background: rgba(0, 0, 0, 0.38);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+#modal-backdrop.active {
+    pointer-events: all;
+}
+
+/* ══════════════════════════════════════
+   摇杆金色高亮过渡（近邻提示）
+══════════════════════════════════════ */
+#joystick-base {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+#joystick-base.near-resource {
+    border-color: rgba(212, 175, 55, 0.85);
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.45) inset,
+                0 0 20px rgba(212, 175, 55, 0.25);
+}
+
+/* ══════════════════════════════════════
+   上下文感知采集按钮
+══════════════════════════════════════ */
+#mb-context-collect,
+.mb-context-btn {
+    position: absolute;
+    right: -72px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(18, 12, 6, 0.62);
+    border: 2px solid var(--ctx-color, rgba(180, 140, 55, 0.7));
+    box-shadow: 0 0 14px rgba(0, 0, 0, 0.45),
+                0 0 10px var(--ctx-color, rgba(180, 140, 55, 0.3));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.15s ease;
+    pointer-events: all;
+    z-index: 10;
+}
+.mb-context-btn.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) scale(0.75);
+}
+.mb-context-btn.mb-active {
+    background: rgba(140, 105, 25, 0.65);
+    transform: translateY(-50%) scale(0.88);
+    box-shadow: 0 0 18px var(--ctx-color, rgba(212, 175, 55, 0.5));
+}
+.ctx-icon {
+    font-size: 18px;
+    color: var(--ctx-color, #D4B87A);
+    line-height: 1;
+}
+.ctx-label {
+    font-family: 'Ma Shan Zheng', cursive, sans-serif;
+    font-size: 10px;
+    color: rgba(225, 195, 110, 0.9);
+    letter-spacing: 0.05em;
+    line-height: 1;
 }

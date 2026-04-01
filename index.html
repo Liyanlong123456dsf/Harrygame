@@ -395,6 +395,24 @@
 
             <!-- 提示信息 -->
             <div id="tooltip" class="hidden"></div>
+
+            <!-- 三日进度条 -->
+            <div id="day-progress" class="hidden">
+                <div class="day-segment" data-day="1"><div class="day-fill"></div></div>
+                <div class="day-segment" data-day="2"><div class="day-fill"></div></div>
+                <div class="day-segment" data-day="3"><div class="day-fill"></div></div>
+            </div>
+
+            <!-- 钟面进度环 -->
+            <svg id="clock-progress" class="hidden" viewBox="0 0 60 60">
+                <circle class="clock-ring" cx="30" cy="30" r="26"/>
+                <circle class="clock-progress-ring" cx="30" cy="30" r="26" 
+                        stroke-dasharray="163.36" stroke-dashoffset="163.36"/>
+                <path class="clock-piece" data-piece="1" d="M30,30 L30,8 A22,22 0 0,1 49,19 Z"/>
+                <path class="clock-piece" data-piece="2" d="M30,30 L49,19 A22,22 0 0,1 49,41 Z"/>
+                <path class="clock-piece" data-piece="3" d="M30,30 L49,41 A22,22 0 0,1 30,52 Z"/>
+                <circle class="clock-center" cx="30" cy="30" r="6"/>
+            </svg>
         </div>
 
         <!-- 背包界面 -->
@@ -467,24 +485,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- 三日进度条 -->
-        <div id="day-progress" class="hidden">
-            <div class="day-segment" data-day="1"><div class="day-fill"></div></div>
-            <div class="day-segment" data-day="2"><div class="day-fill"></div></div>
-            <div class="day-segment" data-day="3"><div class="day-fill"></div></div>
-        </div>
-
-        <!-- 钟面进度环 -->
-        <svg id="clock-progress" class="hidden" viewBox="0 0 60 60">
-            <circle class="clock-ring" cx="30" cy="30" r="26"/>
-            <circle class="clock-progress-ring" cx="30" cy="30" r="26" 
-                    stroke-dasharray="163.36" stroke-dashoffset="163.36"/>
-            <path class="clock-piece" data-piece="1" d="M30,30 L30,8 A22,22 0 0,1 49,19 Z"/>
-            <path class="clock-piece" data-piece="2" d="M30,30 L49,19 A22,22 0 0,1 49,41 Z"/>
-            <path class="clock-piece" data-piece="3" d="M30,30 L49,41 A22,22 0 0,1 30,52 Z"/>
-            <circle class="clock-center" cx="30" cy="30" r="6"/>
-        </svg>
 
         <!-- 设置面板 -->
         <div id="settings-panel" class="screen hidden">

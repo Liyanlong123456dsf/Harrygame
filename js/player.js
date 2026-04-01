@@ -203,6 +203,61 @@ class Player {
             this.vy = 0;
             this.walkCycle = 0;
         }
+        
+        // 磁性吸附（每3帧检测一次，节流）
+        if (!this._snapFrame) this._snapFrame = 0;
+        this._snapFrame++;
+        if (this._snapFrame % 3 === 0) {
+            this.checkMagneticSnap(input, world);
+        }
+    }
+    
+    /**
+     * 磁性吸附辅助：当摇杆幅度 <20% 时，向最近可采集资源缓慢 lerp。
+     * 冲刺时禁用，确保边界不溢出。
+     */
+    checkMagneticSnap(input, world) {
+        const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        if (!isMobile) return;
+        
+        const magnitude = (input.joystickMagnitude !== undefined) ? input.joystickMagnitude : 1;
+        if (magnitude > 0.20) return;           // 只在极轻触或未触摸时触发
+        if (input.keys['shift']) return;         // 冲刺时禁用
+        if (!world || !world.resourceNodes) return;
+        
+        const SNAP_RANGE = 80;
+        let nearest = null;
+        let nearestDist = SNAP_RANGE;
+        
+        for (const node of world.resourceNodes) {
+            if (node.collected || !node.interactable) continue;
+            const ddx = node.x - this.x;
+            const ddy = node.y - this.y;
+            const d = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (d < nearestDist) {
+                nearestDist = d;
+                nearest = node;
+            }
+        }
+        
+        if (!nearest) return;
+        
+        // prefers-reduced-motion：瞬间对齐而非 lerp 动画
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReduced) {
+            if (nearestDist < 20) {
+                this.x = nearest.x;
+                this.y = nearest.y;
+            }
+        } else {
+            // 每次 lerp 15%，约 0.05s 完成 ~8px 移动
+            this.x = Utils.lerp(this.x, nearest.x, 0.15);
+            this.y = Utils.lerp(this.y, nearest.y, 0.15);
+        }
+        
+        // 边界保护
+        this.x = Utils.clamp(this.x, 50, world.width - 50);
+        this.y = Utils.clamp(this.y, 50, world.height - 50);
     }
     
     updateStats(dt, world) {

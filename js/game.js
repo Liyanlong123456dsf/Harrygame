@@ -519,6 +519,7 @@ class Game {
             // 创建UI
             this.ui = new UI(this);
             this.ui.show();
+            this.ui.initOutsideClickHandler();
 
             // 创建成就系统（并恢复已解锁记录，使连击/幸运状态持久化）
             this.achievements = new AchievementSystem(this);
@@ -633,6 +634,7 @@ class Game {
         if (!this.ui) {
             this.ui = new UI(this);
             this.ui.show();
+            this.ui.initOutsideClickHandler();
         }
 
         // P1 fix: 若成就系统尚未初始化，在此创建
@@ -1328,6 +1330,7 @@ class Game {
         // 创建UI
         this.ui = new UI(this);
         this.ui.show();
+        this.ui.initOutsideClickHandler();
         
         // 创建成就系统
         this.achievements = new AchievementSystem(this);
@@ -1414,6 +1417,9 @@ class Game {
         
         // 更新UI
         this.ui.update(dt);
+        
+        // 更新移动端近邻检测（摇杆高亮 + 采集按钮）
+        if (this.mobileControls) this.mobileControls.updateProximity();
         
         // 更新任务系统
         if (this.quest) {

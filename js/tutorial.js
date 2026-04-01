@@ -137,8 +137,9 @@ class TutorialSystem {
         // 显示旁白
         this._showNarration(step.narration);
         
-        // 显示目标提示
-        setTimeout(() => {
+        // 显示目标提示（保存 ID，允许 _completeStep() 取消以防快速触发竞态）
+        this._showHintTimer = setTimeout(() => {
+            if (this.currentStep !== index || this._stepCompleting || !this.active) return;
             this._showObjective(step.objective, step.hint);
             this._highlightControls(step);
         }, 1500);
@@ -146,6 +147,9 @@ class TutorialSystem {
     
     _completeStep() {
         this._stepCompleting = true;
+        // 取消尚未触发的提示显示计时器，防止它在清理后重新展示 UI
+        clearTimeout(this._showHintTimer);
+        this._showHintTimer = null;
         const step = this.steps[this.currentStep];
         
         // 移除高亮
@@ -179,6 +183,10 @@ class TutorialSystem {
     }
     
     _completeTutorial() {
+        // 兜底清理：确保无论路径如何，所有 Tutorial UI 在进入过渡前都消失
+        clearTimeout(this._showHintTimer);
+        this._showHintTimer = null;
+        this._removeHighlights();
         this.completed = true;
         this.active = false;
         
@@ -235,7 +243,9 @@ class TutorialSystem {
     }
     
     _onUseComplete() {
-        // 准备过渡
+        // 使用润滑油后立即清除教程古钟引用，停止 canvas [E] 标签继续渲染
+        if (this.game.world) this.game.world.tutorialClock = null;
+        this.tutorialClock = null;
     }
     
     // ═══════════════════════════════════════════════════════════
@@ -281,11 +291,11 @@ class TutorialSystem {
     
     _showObjective(objective, hint) {
         const panel = document.getElementById('tutorial-objective') || this._createObjectiveElement();
+        panel.classList.remove('hidden', 'hiding'); // 清除淡出中间状态
         panel.innerHTML = `
             <div class="objective-text">${objective}</div>
             <div class="objective-hint">${hint}</div>
         `;
-        panel.classList.remove('hidden');
     }
     
     _createObjectiveElement() {
@@ -356,18 +366,32 @@ class TutorialSystem {
     }
     
     _removeHighlights() {
-        // 移除键盘提示组和个别提示
-        document.getElementById('tutorial-key-group')?.remove();
-        document.querySelectorAll('.tutorial-key-hint').forEach(el => el.remove());
+        // 键盘提示组：300ms 淡出后移除（符合大纲第 4 节 ease-out 规范）
+        const group = document.getElementById('tutorial-key-group');
+        if (group && !group.classList.contains('hiding')) {
+            group.classList.add('hiding');
+            setTimeout(() => group.remove(), 300);
+        }
+        document.querySelectorAll('.tutorial-key-hint:not(#tutorial-key-group .tutorial-key-hint)').forEach(el => {
+            el.style.transition = 'opacity 0.3s ease-out';
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 300);
+        });
         
         // 移除按钮高亮
         document.querySelectorAll('.tutorial-highlight').forEach(el => {
             el.classList.remove('tutorial-highlight');
         });
         
-        // 隐藏目标面板
+        // 目标面板：300ms 淡出后设为 hidden（采用 .hiding 进渡最终挂起 display:none）
         const panel = document.getElementById('tutorial-objective');
-        if (panel) panel.classList.add('hidden');
+        if (panel && !panel.classList.contains('hidden') && !panel.classList.contains('hiding')) {
+            panel.classList.add('hiding');
+            setTimeout(() => {
+                panel.classList.remove('hiding');
+                panel.classList.add('hidden');
+            }, 300);
+        }
     }
     
     // ═══════════════════════════════════════════════════════════

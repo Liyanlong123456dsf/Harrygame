@@ -16,6 +16,10 @@ class UI {
     }
     
     init() {
+        this._modalStack = [];   // open modal panels stack
+        this._backdrop = null;   // dark overlay element
+        this._ptrDownTime = 0;   // pointerdown timestamp for click vs drag detection
+        this._ptrDownX = 0;
         // 获取DOM元素
         this.elements = {
             uiLayer: document.getElementById('ui-layer'),
@@ -58,8 +62,89 @@ class UI {
         
         this.bindEvents();
         this.initInventoryGrid();
+        this._initModalBackdrop();
     }
     
+    // ──────────────────────────────────────────
+    // ModalManager — 外部点击关闭 + 暗化背景
+    // ──────────────────────────────────────────
+
+    _initModalBackdrop() {
+        const bd = document.createElement('div');
+        bd.id = 'modal-backdrop';
+        bd.style.cssText = [
+            'position:fixed;inset:0;z-index:890;',
+            'background:rgba(0,0,0,0.38);',
+            'pointer-events:none;',
+            'opacity:0;transition:opacity 0.25s ease;'
+        ].join('');
+        document.body.appendChild(bd);
+        this._backdrop = bd;
+    }
+
+    _pushModal(element, closeFn) {
+        // avoid duplicates
+        if (this._modalStack.some(m => m.element === element)) return;
+        this._modalStack.push({ element, closeFn });
+        this._updateBackdrop();
+    }
+
+    _popModal(element) {
+        const idx = this._modalStack.findIndex(m => m.element === element);
+        if (idx !== -1) this._modalStack.splice(idx, 1);
+        this._updateBackdrop();
+    }
+
+    _updateBackdrop() {
+        if (!this._backdrop) return;
+        if (this._modalStack.length > 0) {
+            this._backdrop.style.opacity = '1';
+        } else {
+            this._backdrop.style.opacity = '0';
+        }
+    }
+
+    /**
+     * 初始化"点击面板外部关闭"监听器。
+     * 需在 game 实例已初始化后调用（来自 game.js 中 UI 创建之后）。
+     */
+    initOutsideClickHandler() {
+        if (this._outsideHandlerBound) return;
+        this._outsideHandlerBound = true;
+
+        document.addEventListener('pointerdown', (e) => {
+            this._ptrDownTime = Date.now();
+            this._ptrDownX   = e.clientX;
+        }, { passive: true });
+
+        document.addEventListener('pointerup', (e) => {
+            if (this._modalStack.length === 0) return;
+
+            const elapsed = Date.now() - this._ptrDownTime;
+            if (elapsed > 200) return;               // drag, not a tap
+            if (Math.abs(e.clientX - this._ptrDownX) > 12) return;  // horizontal drag
+
+            // Joystick zone exemption: left 30% of screen on touch devices
+            const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+            if (isTouch && e.clientX < window.innerWidth * 0.30) return;
+
+            // Panel edge buffer: 20px inside panel edge does NOT close
+            const top = this._modalStack[this._modalStack.length - 1];
+            const rect = top.element.getBoundingClientRect();
+            const BUFFER = 20;
+            const insideWithBuffer = (
+                e.clientX >= rect.left   - BUFFER &&
+                e.clientX <= rect.right  + BUFFER &&
+                e.clientY >= rect.top    - BUFFER &&
+                e.clientY <= rect.bottom + BUFFER
+            );
+            if (insideWithBuffer) return;
+
+            // Close top modal
+            top.closeFn();
+        }, { passive: true });
+    }
+
     bindEvents() {
         // 背包按钮
         this.elements.inventoryBtn.addEventListener('click', () => {
@@ -71,10 +156,14 @@ class UI {
             this.toggleCraftScreen();
         });
         
-        // 关闭按钮
+        // 关闭按钮（含 ModalManager 同步）
         document.querySelectorAll('.close-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.target.closest('.screen')?.classList.add('hidden');
+                const screen = e.target.closest('.screen');
+                if (screen) {
+                    screen.classList.add('hidden');
+                    this._popModal(screen);
+                }
                 this.game.paused = false;
                 this.hideTooltip();
                 this._returnSlotsToInventory();
@@ -346,6 +435,7 @@ class UI {
             this.refreshInventory();
             screen.classList.remove('hidden');
             this.game.paused = true;
+            this._pushModal(screen, () => this.toggleInventory());
             
             // 通知教程系统
             if (this.game.tutorial && this.game.tutorial.active) {
@@ -354,10 +444,14 @@ class UI {
         } else {
             screen.classList.add('hidden');
             this.game.paused = false;
+            this._popModal(screen);
         }
         
         // 关闭合成界面 + 隐藏残留tooltip
-        this.elements.craftScreen.classList.add('hidden');
+        if (!this.elements.craftScreen.classList.contains('hidden')) {
+            this.elements.craftScreen.classList.add('hidden');
+            this._popModal(this.elements.craftScreen);
+        }
         this.hideTooltip();
     }
     
@@ -470,14 +564,19 @@ class UI {
             this.updateCraftPreview();
             screen.classList.remove('hidden');
             this.game.paused = true;
+            this._pushModal(screen, () => this.toggleCraftScreen());
         } else {
             this._returnSlotsToInventory();
             screen.classList.add('hidden');
             this.game.paused = false;
+            this._popModal(screen);
         }
 
         // 关闭背包 + 隐藏残留tooltip
-        this.elements.inventoryScreen.classList.add('hidden');
+        if (!this.elements.inventoryScreen.classList.contains('hidden')) {
+            this.elements.inventoryScreen.classList.add('hidden');
+            this._popModal(this.elements.inventoryScreen);
+        }
         this.hideTooltip();
     }
 
