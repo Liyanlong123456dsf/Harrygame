@@ -68,6 +68,7 @@ class TutorialSystem {
         this._itemCrafted = false;
         this._oilUsed = false;
         this._stepCompleting = false; // 防止_completeStep在setTimeout期间每帧重复触发
+        this._craftPanelHintHidden = false; // Bug3：合成面板打开后是否已隐藏 C 键提示
         
         // 教程专用资源
         this.tutorialGear = null;
@@ -104,6 +105,18 @@ class TutorialSystem {
             this._lastPlayerPos = { x: this.game.player.x, y: this.game.player.y };
         }
         
+        // 合成步骤：一旦合成面板打开，移除 C 键高亮并更新提示文字
+        if (step.id === 'craft' && !this._craftPanelHintHidden) {
+            const craftPanel = document.getElementById('craft-panel');
+            if (craftPanel && !craftPanel.classList.contains('hidden')) {
+                this._craftPanelHintHidden = true;
+                this._removeHighlights();
+                // 提示文字改为引导调制操作
+                const objHint = document.querySelector('#tutorial-objective .objective-hint');
+                if (objHint) objHint.textContent = '选择润滑油配方并点击调制';
+            }
+        }
+
         // 检查当前步骤是否完成（加入展开得死守卫，防止每帧重复触发）
         if (!this._stepCompleting && step.check && step.check()) {
             this._completeStep();
@@ -118,7 +131,8 @@ class TutorialSystem {
         
         const step = this.steps[index];
         this.currentStep = index;
-        this._stepCompleting = false; // 新步骤允许再次检查
+        this._stepCompleting = false;         // 新步骤允许再次检查
+        this._craftPanelHintHidden = false;   // 重置合成提示状态
         
         // 显示旁白
         this._showNarration(step.narration);

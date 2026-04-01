@@ -450,7 +450,14 @@ class Game {
         this._debugSaveBackup = localStorage.getItem(this.saveKey);
         this._isDebugTutorial = true;
 
-        // 如果序言正在播放，必须先中断它，否则 startGame() 的 await 永不解除阻塞
+        // 序言正在播放：强制隐藏 canvas（绕过 ~330ms 淡出动画），再调用 stop()
+        const introCanvas = document.getElementById('intro-canvas');
+        if (introCanvas) {
+            introCanvas.style.opacity = '0';
+            introCanvas.style.pointerEvents = 'none';
+            introCanvas.classList.add('hidden');
+        }
+        document.getElementById('intro-skip-btn')?.classList.add('hidden');
         if (this._activeIntro) {
             this._activeIntro.stop();
         }

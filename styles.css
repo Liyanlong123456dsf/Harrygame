@@ -1179,7 +1179,7 @@ body {
 /* ========== 对话框 ========== */
 #dialog-box {
     position: absolute;
-    bottom: 100px;
+    bottom: 160px;  /* Bug4: 上移，与 pigment-panel(bottom:20px,h:50px) 保留90px净距 */
     left: 50%;
     transform: translateX(-50%);
     background: linear-gradient(180deg, var(--parchment) 0%, var(--parchment-dark) 100%);
@@ -2769,14 +2769,14 @@ body {
 }
 .objective-text {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 1.3rem;
+    font-size: clamp(1.05rem, 1.8vw, 1.4rem);  /* Bug5: 响应式 */
     color: #F0E4C0;
     margin-bottom: 0.3rem;
     text-shadow: 0 1px 4px rgba(0,0,0,0.8);
 }
 .objective-hint {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 1.0rem;
+    font-size: clamp(0.85rem, 1.4vw, 1.05rem);  /* Bug5: 响应式 */
     color: #C8B070;
     text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     letter-spacing: 0.05em;
@@ -2941,7 +2941,7 @@ body {
 ══════════════════════════════════════ */
 .achievement-popup {
     position: fixed;
-    top: 15%;
+    top: 28%;   /* Bug4: 避开 tutorial-objective(top:12%) 约80px高的区间 */
     left: 50%;
     transform: translateX(-50%) translateY(-20px);
     background: linear-gradient(135deg, rgba(40, 35, 50, 0.95), rgba(25, 22, 32, 0.98));
@@ -3134,7 +3134,7 @@ body {
         padding: 0.3rem 0.8rem;
     }
     .achievement-popup {
-        top: 10%;
+        top: 22%;  /* Bug4 mobile: tutorial-objective is smaller, 22% gives enough clearance */
         padding: 0.6rem 1rem;
     }
     .achievement-icon {
