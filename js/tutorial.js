@@ -574,64 +574,66 @@ class TutorialSystem {
         this._showNarration('古钟在那里。它在等你。');
     }
     
-    // ═══════════════════════════════════════════════════════════
-    // 过渡动画
-    // ═══════════════════════════════════════════════════════════
-    
     _playTransitionAnimation() {
-        // 随水墨散、时间回流意象设计
-        // 节奏: 0s齐调鼓声 → 0.3s墨点扩散 → 2.1s全黑 → 2.4s诗句出现 → 4.2s“第一日” → 5.8s淡出 → 6.8s开始
+        // 节奏: 0s鼓声 → 0.05s墨迹扩散 → 1.85s全黑
+        //       → 2.4s上句入场 → 3.2s"第一日"入场 → 4.0s下句入场
+        //       → 5.6s淡出 → 6.6s开始正式游戏
         const overlay = document.createElement('div');
         overlay.className = 'tutorial-transition-overlay';
         
-        // 诗句模块
-        const poem = document.createElement('p');
-        poem.className = 'ink-poem';
-        poem.innerHTML = '钟声响了一下，就停了。<em>你是第一个听见的人。</em>';
+        // 上句（夹持布局：上方氛围文字）
+        const subTop = document.createElement('p');
+        subTop.className = 'ink-sub ink-sub-top';
+        subTop.textContent = '钟声响了一下，就停了。';
         
-        // 第一日模块
+        // 第一日模块（中心视觉焦点）
         const chapter = document.createElement('div');
         chapter.className = 'chapter-reveal';
         chapter.innerHTML = '<span class="day-label">第一日</span>';
         
-        overlay.appendChild(poem);
+        // 下句（夹持布局：下方余韵文字）
+        const subBot = document.createElement('p');
+        subBot.className = 'ink-sub ink-sub-bot';
+        subBot.textContent = '你是第一个听见的人。';
+        
+        overlay.appendChild(subTop);
         overlay.appendChild(chapter);
+        overlay.appendChild(subBot);
         document.body.appendChild(overlay);
         
-        // 阶段一: 鼓声 + 墨迹扩散开始 (0 → 300ms)
+        // 阶段一: 鼓声 + 墨迹扩散开始
         GameAudio.playClockChime?.();
         setTimeout(() => overlay.classList.add('ink-spreading'), 50);
         
-        // 阶段二: 墨迹盖满，切换到纯黑状态 (1.85s)
+        // 阶段二: 墨迹盖满，切换到纯黑
         setTimeout(() => {
             overlay.classList.remove('ink-spreading');
             overlay.classList.add('ink-full');
         }, 1850);
         
-        // 阶段三: 诗句出现 (2.4s)
-        setTimeout(() => poem.classList.add('visible'), 2400);
+        // 阶段三: 上句滑入 (2.4s)
+        setTimeout(() => subTop.classList.add('visible'), 2400);
         
-        // 阶段四: “第一日”揭露 (4.2s)
-        setTimeout(() => chapter.classList.add('visible'), 4200);
+        // 阶段四: "第一日"放大揭幕 (3.2s，上句后 0.8s)
+        setTimeout(() => chapter.classList.add('visible'), 3200);
         
-        // 阶段5: 整体淡出 (5.8s)
-        setTimeout(() => overlay.classList.add('fade-out'), 5800);
+        // 阶段五: 下句滑入 (4.0s，上句后 1.6s，形成夹持完成感)
+        setTimeout(() => subBot.classList.add('visible'), 4000);
         
-        // 阶段6: 开始正式游戏 (6.8s)
+        // 阶段六: 整体淡出 (5.6s)
+        setTimeout(() => overlay.classList.add('fade-out'), 5600);
+        
+        // 阶段七: 开始正式游戏 (6.6s)
         setTimeout(() => {
             overlay.remove();
             this._startMainGame();
-        }, 6800);
+        }, 6600);
     }
     
     _startMainGame() {
-        // 调试序章模式：拦截，不进入正式游戏，不写存档标记
+        // 调试序章模式：弹出选择弹窗，让开发者决定后续操作
         if (this.game._isDebugTutorial) {
-            this.game.isTutorialMode = false;
-            document.getElementById('debug-tutorial-watermark')?.classList.remove('visible');
-            this.game.ui?.showDialog('[DEBUG] 序章检查完成 ✓  点击外挂面板"退出&恢复"回到主存档', 5000);
-            // 停止 gameLoop 继续渲染教程世界（不销毁，仅冻结）
-            this.game.paused = true;
+            this._showDebugTransitionChoice();
             return;
         }
 
@@ -683,6 +685,47 @@ class TutorialSystem {
         
         // 显示开场提示
         this.game.ui?.showDialog('你跌入了褪色界...在三日内修复古钟，才能回到人间。');
+    }
+    
+    _showDebugTransitionChoice() {
+        this.game.paused = true;
+        
+        const modal = document.createElement('div');
+        modal.id = 'debug-transition-modal';
+        modal.innerHTML = `
+            <div class="dtm-card">
+                <div class="dtm-title">⚙ 序章调试完成</div>
+                <div class="dtm-body">选择后续操作：</div>
+                <button class="dtm-btn dtm-btn-primary" id="dtm-continue">
+                    进入第一日<small>覆盖主存档，完整测试过渡流程</small>
+                </button>
+                <button class="dtm-btn dtm-btn-secondary" id="dtm-keep">
+                    仅测试模式<small>游戏暂停，可从外挂面板"退出&amp;恢复"原存档</small>
+                </button>
+            </div>`;
+        document.body.appendChild(modal);
+        
+        document.getElementById('dtm-continue').addEventListener('click', () => {
+            modal.remove();
+            // 清除调试标志，与正常路径合并
+            document.getElementById('debug-tutorial-watermark')?.classList.remove('visible');
+            if (this.game._debugBeforeUnload) {
+                window.removeEventListener('beforeunload', this.game._debugBeforeUnload);
+                this.game._debugBeforeUnload = null;
+            }
+            this.game._isDebugTutorial = false;
+            this.game._debugSaveBackup = null;
+            this.game.paused = false;
+            // 正常执行 _startMainGame（调试标志已清除，不会再次拦截）
+            this._startMainGame();
+        });
+        
+        document.getElementById('dtm-keep').addEventListener('click', () => {
+            modal.remove();
+            document.getElementById('debug-tutorial-watermark')?.classList.remove('visible');
+            this.game.isTutorialMode = false;
+            this.game.ui?.showDialog('[DEBUG] 序章检查完成 ✓  点击外挂面板"退出&恢复"回到主存档', 5000);
+        });
     }
     
     // ═══════════════════════════════════════════════════════════

@@ -250,33 +250,18 @@ class AchievementSystem {
         if (reward.ink) p.addStat('ink', reward.ink);
         if (reward.warmth) p.addStat('warmth', reward.warmth);
         
-        // 永久加成
-        if (reward.collectSpeed) {
-            p.permanentBonuses = p.permanentBonuses || {};
-            p.permanentBonuses.collectSpeed = (p.permanentBonuses.collectSpeed || 1) * reward.collectSpeed;
-        }
-        if (reward.craftSpeed) {
-            p.permanentBonuses = p.permanentBonuses || {};
-            p.permanentBonuses.craftSpeed = (p.permanentBonuses.craftSpeed || 1) * reward.craftSpeed;
-        }
-        if (reward.nightVision) {
-            p.permanentBonuses = p.permanentBonuses || {};
-            p.permanentBonuses.nightVision = (p.permanentBonuses.nightVision || 1) * reward.nightVision;
-        }
+        // 永久加成 —— 统一存储为加法增量（格式：0.1 = +10%）
+        // 消费侧公式：getEffectiveValue(base, key) = base * (1 + bonus)
+        // 奖励定义中的值（如 1.1）表示 "+10%"，delta = rewardValue - 1
+        const pb = p.permanentBonuses = p.permanentBonuses || {};
+        if (reward.collectSpeed)  pb.collectSpeed  = (pb.collectSpeed  || 0) + (reward.collectSpeed  - 1);
+        if (reward.craftSpeed)    pb.craftSpeed    = (pb.craftSpeed    || 0) + (reward.craftSpeed    - 1);
+        if (reward.nightVision)   pb.nightVision   = (pb.nightVision   || 0) + (reward.nightVision   - 1);
+        if (reward.attackSpeed)   pb.attackSpeed   = (pb.attackSpeed   || 0) + (reward.attackSpeed   - 1);
+        if (reward.pigmentPower)  pb.pigmentPower  = (pb.pigmentPower  || 0) + (reward.pigmentPower  - 1);
+        if (reward.luckBonus)     pb.luck          = (pb.luck          || 0) + (reward.luckBonus     - 1);
         if (reward.attackDamage) {
             p.attackDamage = (p.attackDamage || 10) + reward.attackDamage;
-        }
-        if (reward.attackSpeed) {
-            p.permanentBonuses = p.permanentBonuses || {};
-            p.permanentBonuses.attackSpeed = (p.permanentBonuses.attackSpeed || 1) * reward.attackSpeed;
-        }
-        if (reward.pigmentPower) {
-            p.permanentBonuses = p.permanentBonuses || {};
-            p.permanentBonuses.pigmentPower = (p.permanentBonuses.pigmentPower || 1) * reward.pigmentPower;
-        }
-        if (reward.luckBonus) {
-            p.permanentBonuses = p.permanentBonuses || {};
-            p.permanentBonuses.luck = (p.permanentBonuses.luck || 1) * reward.luckBonus;
         }
         if (reward.maxPigment) {
             p.maxPigment = (p.maxPigment || 100) + reward.maxPigment;
@@ -347,9 +332,9 @@ class AchievementSystem {
             this.showStreakText(this.streaks.collect);
         }
         
-        // 随机双倍奖励 (5%概率)
-        const luck = p.permanentBonuses?.luck || 1;
-        if (Math.random() < 0.05 * luck) {
+        // 随机双倍奖励（基准 5%，luck 分量每 +0.05 = 额外 +5% 概率）
+        const luck = (p.permanentBonuses && p.permanentBonuses.luck) || 0;
+        if (Math.random() < 0.05 * (1 + luck)) {
             bonus *= 2;
             p.stats.luckyTriggers = (p.stats.luckyTriggers || 0) + 1;
             this.showLuckyEffect();
@@ -381,9 +366,9 @@ class AchievementSystem {
         // 击杀奖励
         p.addStat('ink', 5);
         
-        // 随机掉落 (10%概率)
-        const luck = p.permanentBonuses?.luck || 1;
-        if (Math.random() < 0.1 * luck) {
+        // 随机掉落（基准 10%，luck 分量加成概率）
+        const luck = (p.permanentBonuses && p.permanentBonuses.luck) || 0;
+        if (Math.random() < 0.1 * (1 + luck)) {
             this.dropRandomLoot();
         }
     }
@@ -395,9 +380,9 @@ class AchievementSystem {
         p.stats = p.stats || {};
         p.stats.totalCrafted = (p.stats.totalCrafted || 0) + 1;
         
-        // 随机额外产出 (8%概率)
-        const luck = p.permanentBonuses?.luck || 1;
-        if (Math.random() < 0.08 * luck) {
+        // 随机额外产出（基准 8%，luck 分量加成概率）
+        const luck = (p.permanentBonuses && p.permanentBonuses.luck) || 0;
+        if (Math.random() < 0.08 * (1 + luck)) {
             p.inventory.addItem(itemId, 1);
             this.game.ui?.showDialog('幸运！额外获得了一个', 1500);
             this.showLuckyEffect();

@@ -748,9 +748,17 @@ class UI {
         // 添加成品
         inventory.addItem(recipe.id, 1);
 
+        // craftSpeed: cap 100% → 额外产出概率（100% = 每次必出额外1个）
+        const craftBonus = Math.min((this.game.player.permanentBonuses && this.game.player.permanentBonuses.craftSpeed) || 0, 1.0);
+        let craftMsg = `成功制作了 ${recipe.name}！`;
+        if (craftBonus > 0 && Math.random() < craftBonus) {
+            inventory.addItem(recipe.id, 1);
+            craftMsg += '（巧手加成：额外获得1个！）';
+        }
+
         // 特效 & 音效
         GameAudio.playCraft();
-        this.showDialog(`成功制作了 ${recipe.name}！`);
+        this.showDialog(craftMsg);
 
         // 合成成功粒子特效（使用玩家位置，因为粒子系统在世界坐标中渲染）
         if (this.game.player) {

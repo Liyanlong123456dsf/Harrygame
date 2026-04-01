@@ -104,10 +104,16 @@ class Game {
                 setTimeout(() => enterOverlay.remove(), 800);
 
                 await GameAudio.init();
-                // 序言播放（此时音频已就绪）
-                await this.narration.play('opening');
+                
+                // 重置后跳过序言标志
+                const skipIntroFlag = localStorage.getItem('shiseji_skip_intro');
+                if (skipIntroFlag) {
+                    localStorage.removeItem('shiseji_skip_intro');
+                } else {
+                    await this.narration.play('opening');
+                }
 
-                // 序言结束后启动开始屏
+                // 序言结束（或跳过）后启动开始屏
                 this.startScreen.classList.remove('hidden');
                 this._initStartTextBg();
                 this._initClockTowerBg();
@@ -117,6 +123,9 @@ class Game {
                 if (this.hasSaveData()) {
                     this.continueBtn?.classList.remove('hidden');
                 }
+                
+                // 若存在 5 分钟内的撤销备份，显示撤销横幅
+                this._checkUndoBackup();
             };
             enterOverlay.addEventListener('click', onEnter, { once: true });
         }
@@ -257,11 +266,15 @@ class Game {
         
         if (this.paused) {
             pauseMenu?.classList.remove('hidden');
+            this._prePauseVolume = GameAudio.volumes.master;   // P0 fix: 暂停前先保存原始音量
             GameAudio.setVolume('master', GameAudio.volumes.master * 0.3);
         } else {
             pauseMenu?.classList.add('hidden');
             document.getElementById('settings-panel')?.classList.add('hidden');
-            GameAudio.setVolume('master', GameAudio.volumes.master);
+            // P0 fix: 用暂停前的真实音量恢复，而不是已被修改过的 volumes.master
+            const restoreVol = this._prePauseVolume ?? GameAudio.volumes.master;
+            this._prePauseVolume = undefined;
+            GameAudio.setVolume('master', restoreVol);
         }
     }
     
@@ -285,6 +298,7 @@ class Game {
                     clockPieces: this.player.clockPieces,
                     clockOilUsed: this.player.clockOilUsed,
                     inventory: this.player.inventory.serialize(),
+                    permanentBonuses: { ...(this.player.permanentBonuses || {}) },
                     equippedWeapon: this.player.equippedWeapon?.id || null,
                     placedItems: this.player.placedItems.map(item => ({
                         type: item.type,
@@ -301,13 +315,14 @@ class Game {
                         type: n.type,
                         x: n.x,
                         y: n.y,
-                        available: n.available,
-                        respawnTimer: n.respawnTimer
+                        collected: n.collected,       // P1 fix: 正确字段名
+                        respawnTime: n.respawnTime    // P1 fix: 正确字段名
                     }))
                 },
                 quest: this.quest ? {
                     currentStage: this.quest.currentStageIndex
-                } : null
+                } : null,
+                achievements: this.achievements ? this.achievements.serialize() : null
             };
             
             localStorage.setItem(this.saveKey, JSON.stringify(saveData));
@@ -338,6 +353,97 @@ class Game {
         localStorage.removeItem(this.saveKey);
     }
     
+    /**
+     * 完全重置游戏数据。
+     * @param {boolean} skipIntro  重置后跳过序言直接进入序章
+     */
+    resetGameData(skipIntro = false) {
+        // 1. 创建 5 分钟可撤销备份（含时间戳）
+        const currentSave = localStorage.getItem(this.saveKey);
+        const undoPayload = JSON.stringify({ data: currentSave, ts: Date.now() });
+        localStorage.setItem('shiseji_undo_backup', undoPayload);
+        // 5 分钟后自动清除备份
+        setTimeout(() => localStorage.removeItem('shiseji_undo_backup'), 300_000);
+        
+        // 2. 删除核心存档 + 教程完成标记
+        localStorage.removeItem(this.saveKey);
+        localStorage.removeItem('shiseji_tutorial_done');
+        
+        // 3. 可选：跳过序言标志（enter-overlay 时读取）
+        if (skipIntro) {
+            localStorage.setItem('shiseji_skip_intro', '1');
+        }
+        
+        // 4. 刷新页面（start screen 初始化后会检测到 undo_backup 并显示撤销按钮）
+        location.reload();
+    }
+    
+    /**
+     * 展示重置确认弹窗（DOM modal，需输入"重置"才能激活确认按钮）。
+     */
+    _showResetConfirmDialog() {
+        if (document.getElementById('reset-confirm-modal')) return;
+        
+        // 收集当前游戏摘要用于警示
+        let summaryHtml = '';
+        const save = this.loadGame();
+        if (save) {
+            const day = save.world?.day ?? '?';
+            const achCount = save.achievements?.unlocked?.length ?? 0;
+            const invItems = save.player?.inventory
+                ? Object.values(save.player.inventory).filter(v => v > 0).length : 0;
+            summaryHtml = `<ul class="rcm-summary">
+                <li>当前进度：第 ${day} 日</li>
+                <li>已解锁成就：${achCount} 个</li>
+                <li>背包物品种类：${invItems} 种</li>
+            </ul>`;
+        }
+        
+        const modal = document.createElement('div');
+        modal.id = 'reset-confirm-modal';
+        modal.innerHTML = `
+            <div class="rcm-card">
+                <div class="rcm-title">⚠ 完全重置游戏</div>
+                <div class="rcm-desc">此操作将永久删除所有游戏进度（5 分钟内可撤销）：
+                    ${summaryHtml}
+                </div>
+                <label class="rcm-check-label">
+                    <input type="checkbox" id="rcm-skip-intro">
+                    重置后直接进入序章（跳过序言动画）
+                </label>
+                <div class="rcm-input-row">
+                    <input type="text" id="rcm-confirm-input"
+                        placeholder='输入"重置"以确认' autocomplete="off" spellcheck="false">
+                </div>
+                <div class="rcm-actions">
+                    <button class="rcm-btn rcm-btn-cancel" id="rcm-cancel">取消</button>
+                    <button class="rcm-btn rcm-btn-confirm" id="rcm-confirm" disabled>确认重置</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        
+        const input   = document.getElementById('rcm-confirm-input');
+        const confirm = document.getElementById('rcm-confirm');
+        const cancel  = document.getElementById('rcm-cancel');
+        const skipCk  = document.getElementById('rcm-skip-intro');
+        
+        // 仅当输入"重置"时启用确认按钮
+        input.addEventListener('input', () => {
+            confirm.disabled = input.value.trim() !== '重置';
+        });
+        
+        confirm.addEventListener('click', () => {
+            modal.remove();
+            this.resetGameData(skipCk.checked);
+        });
+        
+        cancel.addEventListener('click', () => modal.remove());
+        
+        // 阻止按键冒泡到游戏
+        modal.addEventListener('keydown', (e) => e.stopPropagation());
+        input.focus();
+    }
+    
     async loadAndResumeGame(saveData) {
         if (!saveData) return false;
         
@@ -354,8 +460,14 @@ class Game {
             if (saveData.world.resourceNodes) {
                 saveData.world.resourceNodes.forEach((saved, i) => {
                     if (this.world.resourceNodes[i]) {
-                        this.world.resourceNodes[i].available = saved.available;
-                        this.world.resourceNodes[i].respawnTimer = saved.respawnTimer;
+                        // P1 fix: 兼容旧存档字段名（available/respawnTimer）
+                        const wasCollected = saved.collected ?? (saved.available === false);
+                        const respawnRemaining = saved.respawnTime ?? saved.respawnTimer ?? 0;
+                        this.world.resourceNodes[i].collected = wasCollected;
+                        this.world.resourceNodes[i].respawnTime = respawnRemaining;
+                        if (wasCollected) {
+                            this.world.resourceNodes[i].interactable = false;
+                        }
                     }
                 });
             }
@@ -374,6 +486,13 @@ class Game {
                 this.player.inventory.deserialize(saveData.player.inventory);
             }
             
+            // P0 fix: Set 不可 JSON 序列化，反序列化后需手动还原
+            if (this.player.stats.uniqueResources && !(this.player.stats.uniqueResources instanceof Set)) {
+                this.player.stats.uniqueResources = new Set(Object.keys(this.player.stats.uniqueResources));
+            } else if (!this.player.stats.uniqueResources) {
+                this.player.stats.uniqueResources = new Set();
+            }
+            
             // 恢复装备
             if (saveData.player.equippedWeapon) {
                 const weaponKey = Object.keys(CraftedItems).find(k => 
@@ -389,12 +508,23 @@ class Game {
                 this.player.placedItems = saveData.player.placedItems;
             }
             
+            // 恢复永久加成（成就奖励，普通对象可直接赋值）
+            if (saveData.player.permanentBonuses) {
+                this.player.permanentBonuses = { ...saveData.player.permanentBonuses };
+                // 同步攻击冷却基准（避免读档后第一次攻击动画比例错位）
+                const atkBonus = Math.min((this.player.permanentBonuses.attackSpeed) || 0, 1.0);
+                this.player._attackCooldownMax = 0.5 / (1 + atkBonus);
+            }
+            
             // 创建UI
             this.ui = new UI(this);
             this.ui.show();
 
-            // 创建成就系统
+            // 创建成就系统（并恢复已解锁记录，使连击/幸运状态持久化）
             this.achievements = new AchievementSystem(this);
+            if (saveData.achievements) {
+                this.achievements.deserialize(saveData.achievements);
+            }
             
             // 创建任务系统
             this.quest = new QuestSystem(this);
@@ -498,6 +628,18 @@ class Game {
         this.camera.y = Math.max(0, playerY - vh / 2);
 
         this.tutorial = new TutorialSystem(this);
+
+        // P1 fix: 若 UI 尚未初始化（从序言阶段进入），在此创建
+        if (!this.ui) {
+            this.ui = new UI(this);
+            this.ui.show();
+        }
+
+        // P1 fix: 若成就系统尚未初始化，在此创建
+        if (!this.achievements) {
+            this.achievements = new AchievementSystem(this);
+        }
+
         this.tutorial.start();
 
         // 确保 UI 切换到游戏模式
@@ -521,6 +663,7 @@ class Game {
         // 启动游戏循环（_enterDebugTutorial 可能在 startGame()的 async 流程外被调用，
         // 序言阶段游戏循环尚未启动）
         if (!this._rafRunning) {
+            this.lastTime = performance.now(); // Bug2 fix: 防止首帧 dt = NaN
             this._rafRunning = true;
             requestAnimationFrame((ts) => this.gameLoop(ts));
         }
@@ -1571,13 +1714,20 @@ class Game {
                     bonusMultiplier = result.bonus || 1;
                 }
                 
-                const finalCount = Math.ceil(collected.count * bonusMultiplier);
+                // collectSpeed: cap 100% → 最高使产出倍率翻倍（乘在连击/幸运乘数之上）
+                const csBonus = Math.min((this.player.permanentBonuses && this.player.permanentBonuses.collectSpeed) || 0, 1.0);
+                const effectiveMultiplier = bonusMultiplier * (1 + csBonus);
+                const finalCount = Math.ceil(collected.count * effectiveMultiplier);
                 this.player.inventory.addItem(collected.id, finalCount);
                 
-                // 显示提示（含连击/幸运信息）
+                // 显示提示（含连击/幸运/速采信息）
                 let msg = `获得了 ${collected.name}`;
-                if (bonusMultiplier > 1) {
-                    msg += bonusMultiplier >= 2 ? ' ×2!' : ` +${Math.round((bonusMultiplier - 1) * 100)}%`;
+                if (effectiveMultiplier > 1) {
+                    if (effectiveMultiplier >= 2) {
+                        msg += ' ×2!';
+                    } else {
+                        msg += ` +${Math.round((effectiveMultiplier - 1) * 100)}%`;
+                    }
                 }
                 this.ui.showDialog(msg, 1500);
                 
@@ -1767,6 +1917,7 @@ class Game {
         const btnSkipIntro      = document.getElementById('cheat-skip-intro');
         const btnEnterTutorial  = document.getElementById('cheat-enter-tutorial');
         const btnExitTutorial   = document.getElementById('cheat-exit-tutorial');
+        const btnResetAll       = document.getElementById('cheat-reset-all');
 
         if (!trigger || !pwdOverlay || !panel) return;
 
@@ -1887,8 +2038,54 @@ class Game {
             });
         }
 
+        // ── 完全重置 ──
+        if (btnResetAll) {
+            btnResetAll.addEventListener('click', () => {
+                panel.classList.add('hidden');
+                this._showResetConfirmDialog();
+            });
+        }
+
         // 阻止面板内所有按键冒泡到游戏
         panel.addEventListener('keydown', (e) => e.stopPropagation());
+    }
+
+    _checkUndoBackup() {
+        const raw = localStorage.getItem('shiseji_undo_backup');
+        if (!raw) return;
+        let ts;
+        try {
+            ({ ts } = JSON.parse(raw));
+            if (Date.now() - ts > 300_000) {
+                localStorage.removeItem('shiseji_undo_backup');
+                return;
+            }
+        } catch { localStorage.removeItem('shiseji_undo_backup'); return; }
+
+        // 计算剩余有效秒数（向上取整到整分钟以便显示）
+        const remainMs  = 300_000 - (Date.now() - ts);
+        const remainMin = Math.ceil(remainMs / 60_000);
+
+        const banner = document.createElement('div');
+        banner.id = 'undo-reset-banner';
+        banner.innerHTML = `重置完成。<button id="undo-reset-btn">撤销（约 ${remainMin} 分钟内有效）</button>`;
+        document.body.appendChild(banner);
+
+        document.getElementById('undo-reset-btn').addEventListener('click', () => {
+            try {
+                const { data } = JSON.parse(localStorage.getItem('shiseji_undo_backup') || '{}');
+                if (data) localStorage.setItem(this.saveKey, data);
+                localStorage.removeItem('shiseji_undo_backup');
+                // 若原存档存在，说明当时已完成教程，一并恢复标记
+                if (data && JSON.parse(data)) {
+                    localStorage.setItem('shiseji_tutorial_done', '1');
+                }
+            } catch {}
+            location.reload();
+        });
+
+        // 横幅在备份实际到期时自动消失
+        setTimeout(() => banner.remove(), remainMs);
     }
 }
 

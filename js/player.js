@@ -62,6 +62,25 @@ class Player {
         
         // 状态效果
         this.statusEffects = new Map();
+        
+        // 成就永久加成（写入方：AchievementSystem.applyReward；读取方：各系统调用 getEffectiveValue）
+        this.permanentBonuses = {};
+        
+        // 记录当前攻击动画基准冷却（draw() 动画比例使用，随 attackSpeed 动态更新）
+        this._attackCooldownMax = 0.5;
+    }
+    
+    /**
+     * 统一数值访问接口。
+     * @param {number} baseValue  基础值
+     * @param {string} bonusType  加成键名（对应 permanentBonuses 中的 key）
+     * @param {number} [cap=1.0] 加成上限（防止数值爆炸；默认 100%）
+     * @returns {number} baseValue * (1 + clampedBonus)，向后兼容：bonus 缺失时返回 baseValue
+     */
+    getEffectiveValue(baseValue, bonusType, cap = 1.0) {
+        const raw = (this.permanentBonuses && this.permanentBonuses[bonusType]) || 0;
+        const capped = Math.min(Math.max(raw, 0), cap);
+        return baseValue * (1 + capped);
     }
     
     update(dt, input, world) {
@@ -285,8 +304,19 @@ class Player {
                 blue: '#4A7FBF'
             };
             
-            Particles.emitEmotionPigment(this.x, this.y, colors[color], 80);
+            // pigmentPower: cap 100% → 最大发射半径 160，最大数值回复 20
+            const pigPower = Math.min((this.permanentBonuses && this.permanentBonuses.pigmentPower) || 0, 1.0);
+            const emitRadius = Math.round(80 * (1 + pigPower));
+            Particles.emitEmotionPigment(this.x, this.y, colors[color], emitRadius);
             GameAudio.playCollect();
+            
+            // pigmentPower 带来的数值恢复（需解锁对应成就；基础使用无回复效果）
+            if (pigPower > 0) {
+                const statBonus = Math.round(10 * (1 + pigPower));
+                if (color === 'red')    this.addStat('color',  statBonus);
+                if (color === 'yellow') this.addStat('ink',    statBonus);
+                if (color === 'blue')   this.addStat('warmth', statBonus);
+            }
             
             // 通知成就系统
             if (window.game && window.game.achievements) {
@@ -318,7 +348,11 @@ class Player {
     attack(creatures) {
         if (this.attackCooldown > 0) return;
         
-        this.attackCooldown = 0.5;
+        // attackSpeed: cap 100% → 最短冷却 0.25s（画笔动画同步加快，见 draw()）
+        const BASE_COOLDOWN = 0.5;
+        const atkBonus = Math.min((this.permanentBonuses && this.permanentBonuses.attackSpeed) || 0, 1.0);
+        this._attackCooldownMax = BASE_COOLDOWN / (1 + atkBonus);
+        this.attackCooldown = this._attackCooldownMax;
         const attackRange = 50;
         const damage = this.equippedWeapon ? this.attackDamage + (this.equippedWeapon.damage || 0) : this.attackDamage;
         
@@ -471,9 +505,9 @@ class Player {
         // 头部
         this.drawHead(ctx);
         
-        // 根据攻击冷却驱动画笔挥击角度
+        // 根据攻击冷却驱动画笔挥击角度（除以当前动画基准，确保快慢攻击均从全程起始）
         if (this.attackCooldown > 0) {
-            const p = this.attackCooldown / 0.5; // 1→0
+            const p = this.attackCooldown / (this._attackCooldownMax || 0.5); // 1→0
             this.brushAngle = Utils.lerp(1.2, -1.6, p); // 从向前扫到拉回
         } else {
             this.brushAngle = 0;

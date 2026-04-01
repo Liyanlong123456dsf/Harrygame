@@ -2017,25 +2017,39 @@ body {
 /* IntroAnimation跳过按钮 */
 #intro-skip-btn {
     position: fixed;
-    bottom: 28px;
-    right: 36px;
-    background: transparent;
-    border: 1px solid rgba(244,228,188,0.35);
-    color: rgba(244,228,188,0.55);
-    font-family: 'Ma Shan Zheng', cursive;
+    bottom: max(env(safe-area-inset-bottom, 24px), 24px);
+    right: max(env(safe-area-inset-right, 5vw), 5vw);
+    /* 胶囊形半透明背景 */
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(244,228,188,0.28);
+    border-radius: 20px;
+    color: rgba(244, 228, 188, 0.65);
+    font-family: 'ZCOOL XiaoWei', 'PingFang SC', sans-serif;
     font-size: 0.9rem;
-    padding: 6px 18px;
+    /* 最小触摸目标 48×48px（Apple HIG） */
+    min-width: 80px;
+    min-height: 38px;
+    padding: 8px 20px;
     cursor: pointer;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.12em;
     z-index: 1001;
-    transition: color 0.2s, border-color 0.2s, opacity 0.3s;
+    transition: color 0.18s ease, border-color 0.18s ease,
+                background 0.18s ease, opacity 0.3s ease;
 }
 #intro-skip-btn:hover {
-    color: rgba(244,228,188,0.9);
-    border-color: rgba(244,228,188,0.7);
+    color: rgba(244, 228, 188, 0.95);
+    border-color: rgba(244, 228, 188, 0.60);
+    background: rgba(255, 255, 255, 0.20);
+}
+#intro-skip-btn:active {
+    background: rgba(255, 255, 255, 0.28);
+    transform: scale(0.97);
 }
 @media (hover: none) {
     #intro-skip-btn {
+        /* 触屏：移至右上角，避免遮挡主文字区域 */
         bottom: auto;
         top: max(env(safe-area-inset-top, 16px), 16px);
         right: max(env(safe-area-inset-right, 16px), 16px);
@@ -2296,6 +2310,208 @@ body {
     background: rgba(196,163,90,0.15);
     color: rgba(244,228,188,1);
 }
+.cheat-action-btn--danger {
+    border-color: rgba(200,80,70,0.4);
+    color: rgba(230,140,130,0.7);
+}
+.cheat-action-btn--danger:hover {
+    background: rgba(200,80,70,0.18);
+    color: rgba(255,160,150,1);
+    border-color: rgba(200,80,70,0.7);
+}
+
+/* ══ 调试序章过渡选择弹窗 ══ */
+#debug-transition-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(3px);
+}
+.dtm-card {
+    background: #1a1612;
+    border: 1px solid rgba(196,163,90,0.35);
+    border-radius: 10px;
+    padding: 28px 32px;
+    min-width: 320px;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+}
+.dtm-title {
+    font-size: 1rem;
+    color: rgba(196,163,90,0.9);
+    font-family: 'ZCOOL XiaoWei', sans-serif;
+    letter-spacing: 0.1em;
+}
+.dtm-body {
+    font-size: 0.82rem;
+    color: rgba(220,210,190,0.6);
+    letter-spacing: 0.05em;
+}
+.dtm-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(196,163,90,0.25);
+    background: transparent;
+    color: rgba(244,228,188,0.85);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    text-align: left;
+    font-family: 'ZCOOL XiaoWei', sans-serif;
+    letter-spacing: 0.08em;
+}
+.dtm-btn small {
+    font-size: 0.72rem;
+    color: rgba(196,163,90,0.55);
+    letter-spacing: 0.04em;
+}
+.dtm-btn-primary { border-color: rgba(196,163,90,0.45); }
+.dtm-btn-primary:hover { background: rgba(196,163,90,0.12); border-color: rgba(196,163,90,0.8); }
+.dtm-btn-secondary:hover { background: rgba(255,255,255,0.05); }
+
+/* ══ 重置确认弹窗 ══ */
+#reset-confirm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(4px);
+}
+.rcm-card {
+    background: #16100e;
+    border: 1px solid rgba(200,80,70,0.35);
+    border-radius: 10px;
+    padding: 28px 32px;
+    min-width: 340px;
+    max-width: 460px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.9);
+}
+.rcm-title {
+    font-size: 1rem;
+    color: rgba(230,130,120,0.9);
+    font-family: 'ZCOOL XiaoWei', sans-serif;
+    letter-spacing: 0.1em;
+}
+.rcm-desc {
+    font-size: 0.82rem;
+    color: rgba(220,210,190,0.65);
+    line-height: 1.6;
+    letter-spacing: 0.04em;
+}
+.rcm-summary {
+    margin: 6px 0 0 0;
+    padding-left: 16px;
+    color: rgba(220,210,190,0.5);
+    font-size: 0.78rem;
+}
+.rcm-check-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: rgba(196,163,90,0.7);
+    cursor: pointer;
+    user-select: none;
+}
+.rcm-input-row input {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(200,80,70,0.3);
+    border-radius: 5px;
+    color: rgba(244,228,188,0.9);
+    font-size: 0.85rem;
+    padding: 7px 12px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+    font-family: 'PingFang SC', sans-serif;
+    letter-spacing: 0.05em;
+}
+.rcm-input-row input:focus { border-color: rgba(200,80,70,0.7); }
+.rcm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+.rcm-btn {
+    padding: 7px 18px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+    font-family: 'ZCOOL XiaoWei', sans-serif;
+    letter-spacing: 0.08em;
+}
+.rcm-btn-cancel {
+    background: transparent;
+    border-color: rgba(220,210,190,0.2);
+    color: rgba(220,210,190,0.55);
+}
+.rcm-btn-cancel:hover { background: rgba(255,255,255,0.06); border-color: rgba(220,210,190,0.4); }
+.rcm-btn-confirm {
+    background: rgba(200,80,70,0.2);
+    border-color: rgba(200,80,70,0.45);
+    color: rgba(255,160,150,0.9);
+}
+.rcm-btn-confirm:hover:not(:disabled) { background: rgba(200,80,70,0.35); border-color: rgba(200,80,70,0.8); }
+.rcm-btn-confirm:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* ══ 撤销重置横幅 ══ */
+#undo-reset-banner {
+    position: fixed;
+    bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1612;
+    border: 1px solid rgba(196,163,90,0.4);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 0.82rem;
+    color: rgba(220,210,190,0.7);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 900;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    animation: bannerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+@keyframes bannerSlideUp {
+    from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+#undo-reset-btn {
+    background: rgba(196,163,90,0.15);
+    border: 1px solid rgba(196,163,90,0.4);
+    border-radius: 5px;
+    color: rgba(196,163,90,0.9);
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+#undo-reset-btn:hover { background: rgba(196,163,90,0.28); }
 
 /* ── 竖屏提示 ──────────────────────────────── */
 #portrait-overlay {
@@ -2842,13 +3058,8 @@ body {
     position: fixed;
     inset: 0;
     z-index: 700;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 1.6rem;
+    /* 子元素绝对定位分区（25/50/75 vh），overlay 仅作背景层 */
     pointer-events: none;
-    /* 初始：透明 */
     background: radial-gradient(circle 0vmax at 50% 50%,
         #080608 0%, transparent 100%);
     transition: none;
@@ -2865,44 +3076,107 @@ body {
 .tutorial-transition-overlay.ink-full {
     background: #080608;
 }
-/* 诗句文字 */
-.ink-poem {
-    font-family: 'Ma Shan Zheng', cursive;
-    font-size: 1.4rem;
-    color: rgba(196, 163, 90, 0);
+
+/* ── 副标题共用基类（上句 / 下句） ── */
+.ink-sub {
+    position: absolute;
+    left: 0;
+    right: 0;
     text-align: center;
-    line-height: 2.2;
-    letter-spacing: 0.12em;
-    text-shadow: 0 0 20px rgba(196,163,90,0.4);
-    transition: color 1.2s ease;
+    font-family: 'ZCOOL XiaoWei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+    font-size: clamp(24px, 4.5vmin, 80px);
+    color: rgba(245, 230, 211, 0.85);
+    letter-spacing: 0.14em;
+    line-height: 1.6;
+    text-shadow:
+        0 2px 4px rgba(0,0,0,0.92),
+        0 0 12px rgba(196,163,90,0.18);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     pointer-events: none;
-}
-.ink-poem.visible {
-    color: rgba(196, 163, 90, 0.88);
-}
-.ink-poem em {
-    display: block;
-    font-style: normal;
-    font-size: 1.0rem;
-    color: rgba(165, 138, 80, 0.65);
-    margin-top: 0.4rem;
-    letter-spacing: 0.08em;
-}
-/* 第一日 揭幕 */
-.chapter-reveal {
-    text-align: center;
     opacity: 0;
-    transition: opacity 1s ease;
+    will-change: transform, opacity;
+}
+
+/* 上句：25 vh 区 — 从上方滑入 */
+.ink-sub-top {
+    top: 25vh;
+    transform: translateY(calc(-50% - 16px));
+}
+.ink-sub-top.visible {
+    animation: inkSubSlideDown 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes inkSubSlideDown {
+    from { opacity: 0; transform: translateY(calc(-50% - 16px)); }
+    to   { opacity: 0.85; transform: translateY(-50%); }
+}
+
+/* 下句：75 vh 区 — 从下方滑入 */
+.ink-sub-bot {
+    top: 75vh;
+    transform: translateY(calc(-50% + 16px));
+    font-size: clamp(22px, 4vmin, 72px);
+    color: rgba(245, 230, 211, 0.70);
+    letter-spacing: 0.1em;
+}
+.ink-sub-bot.visible {
+    animation: inkSubSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes inkSubSlideUp {
+    from { opacity: 0; transform: translateY(calc(-50% + 16px)); }
+    to   { opacity: 0.70; transform: translateY(-50%); }
+}
+
+/* 第一日 揭幕：50 vh 区（视觉绝对中心） */
+.chapter-reveal {
+    position: absolute;
+    top: 50vh;
+    left: 0;
+    right: 0;
+    text-align: center;
+    transform: translateY(-50%) scale(0.92);
+    opacity: 0;
+    will-change: transform, opacity;
 }
 .chapter-reveal.visible {
-    opacity: 1;
+    animation: dayReveal 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes dayReveal {
+    0%   { opacity: 0; transform: translateY(-50%) scale(0.92); }
+    60%  { opacity: 1; transform: translateY(-50%) scale(1.03); }
+    100% { opacity: 1; transform: translateY(-50%) scale(1); }
 }
 .day-label {
+    display: inline-block;
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 3.2rem;
-    color: #C8A860;
-    letter-spacing: 0.4em;
-    text-shadow: 0 0 30px rgba(196,163,90,0.5), 0 2px 8px rgba(0,0,0,0.8);
+    font-size: clamp(48px, 12vmin, 180px);
+    color: #D4A373;
+    letter-spacing: 0.45em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    text-shadow:
+        0 0 70px rgba(212,163,115,0.55),
+        0 0 28px rgba(212,163,115,0.32),
+        0 4px 14px rgba(0,0,0,0.98);
+}
+
+/* 减少动效模式：跳过动画直接定位至最终位置 */
+@media (prefers-reduced-motion: reduce) {
+    .ink-sub-top.visible {
+        animation: none;
+        opacity: 0.85;
+        transform: translateY(-50%);
+    }
+    .ink-sub-bot.visible {
+        animation: none;
+        opacity: 0.70;
+        transform: translateY(-50%);
+    }
+    .chapter-reveal.visible {
+        animation: none;
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
 }
 /* 阶段3：整体淡出进入游戏 */
 .tutorial-transition-overlay.fade-out {
@@ -3153,7 +3427,8 @@ body {
         font-size: 1.2rem;
     }
     .day-label {
-        font-size: 2rem;
+        /* 移动端横屏：vmin = 视口高度，12vmin 通常为 70-100px，上限收至 120px 防止溢出 */
+        font-size: clamp(42px, 11vmin, 120px);
     }
     #clock-progress {
         width: 45px;

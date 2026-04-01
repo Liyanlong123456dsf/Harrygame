@@ -657,7 +657,10 @@ class World {
     }
     
     getLightSources(player) {
-        let lightSources = [{ x: player.x, y: player.y, radius: 100, intensity: 0.4 }];
+        // nightVision: cap 50% → 最大光圈半径 150，保留夜晚氛围（上限不做全亮）
+        const nvBonus = Math.min((player.permanentBonuses && player.permanentBonuses.nightVision) || 0, 0.5);
+        const playerRadius = Math.round(100 * (1 + nvBonus));
+        let lightSources = [{ x: player.x, y: player.y, radius: playerRadius, intensity: 0.4 }];
         
         for (const item of player.placedItems) {
             if (item.type === 'paperLantern') {
